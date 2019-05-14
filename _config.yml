@@ -2,8 +2,8 @@
 title: exax.org
 description: >
   exax.org
-baseurl: ""
-url: "http://localhost:4000"
+baseurl: "/glansigt"
+url: "https://expertmakeraccelerator.org"
 
 include: ['_pages']
 
