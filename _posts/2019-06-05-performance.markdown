@@ -10,8 +10,12 @@ xxx
 
 yy
 
+zz
+
 ![useful image]({{ site.url }}/images/pelle.jpeg)
 
+
+<div><img src="/assets/pelle.jog" alt="coffee"></div>
 
 This post will discuss the performance constraints of modern computer
 hardware and explain how the Accelerator is optimized towards maximum
