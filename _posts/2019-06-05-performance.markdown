@@ -18,8 +18,11 @@ abs
 
 ![useful image]({{ site.url }}/images/pelle.jpeg)
 
-![GitHub Logo](https://expertmakeraccelerator.org/glansigt/images/pelle.jpeg)
-
+![GitHub Logo1](https://expertmakeraccelerator.org/glansigt/images/pelle.jpeg)
+![GitHub Logo2](https://expertmakeraccelerator.org/assets/pages_performance/pelle.pdf)
+![GitHub Logo3](https://expertmakeraccelerator.org/assets/pages_performance/pelle.png)
+![GitHub Logo4](https://expertmakeraccelerator.org/assets/pages_performance/pelle.jpeg)
+![GitHub Logo5](https://expertmakeraccelerator.org/assets/pages_performance/blog_fig_bottlenecks.png)
 <div><img src="/assets/pelle.jog" alt="coffee"></div>
 
 This post will discuss the performance constraints of modern computer
