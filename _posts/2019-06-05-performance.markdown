@@ -199,6 +199,8 @@ A dataset typically has several columns containing different
 information.  Each processing/analysis task typically uses only a few
 of them simultaneously.
 
+![useful image]({{ site.url }}/assets/pages_performance/blog_fig_bottlenecks.png)
+
 Therefore it makes sense to separate the columns into independent
 files, so that the read bandwidth is only occupied with data that is
 _necessary_ for the processing task at hand.
@@ -219,6 +221,7 @@ This is the opposite of _Map-Reduce_, where we _partition by_hash
 before processing_ instead of _merging everything after processing_.
 Hashing a dataset also happens to be a very fast operation.
 
+![useful image]({{ site.url }}/assets/pages_performance/pelle.png)
 
 
 ### What About Networking?
