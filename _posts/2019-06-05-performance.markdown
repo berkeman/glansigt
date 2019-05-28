@@ -12,8 +12,11 @@ yy
 
 zz
 
+ww
+
 ![useful image]({{ site.url }}/images/pelle.jpeg)
 
+![GitHub Logo](/images/pelle.jpeg)
 
 <div><img src="/assets/pelle.jog" alt="coffee"></div>
 
