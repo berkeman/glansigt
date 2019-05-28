@@ -6,6 +6,8 @@ categories: performance
 ---
 
 
+xxx
+
 This post will discuss the performance constraints of modern computer
 hardware and explain how the Accelerator is optimized towards maximum
 speed given these constraints.
@@ -167,6 +169,8 @@ and even [12TB
 RAM](https://aws.amazon.com/blogs/aws/now-available-amazon-ec2-high-memory-instances-with-6-9-and-12-tb-of-memory-perfect-for-sap-hana/)(!).
 have been available for a while.  In general, more RAM is better, but
 even a small increase in RAM may improve performance.
+
+<img src="{{site.url}}/assets/pages_performance/blog_fig_bottlenecks.pdf" style="display: block; margin: auto;" />
 
 The nice thing is that more RAM may increase performance without any
 extra work (due to the disk buffering).  In addition, data intensive
