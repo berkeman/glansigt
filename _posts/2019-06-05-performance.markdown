@@ -6,10 +6,13 @@ categories: performance
 ---
 
 
-This post will discuss the performance bottlenecks of a modern
-computer and explain how the Accelerator is optimized towards maximum
-speed given these hardware constraints.
+This post will discuss the performance constraints of modern computer
+hardware and explain how the Accelerator is optimized towards maximum
+speed given these constraints.
 
+The assumption is that we want to process a large dataset stored on
+disk.  As we will see, there is a lot of performance to be gained by
+solving the processing task in an optimised way.
 
 
 
@@ -24,7 +27,7 @@ From a high level perspective, it makes sense to start with these two
 questions:
 
  - How fast can we read the data from disk?
- - how fast can we process the data, assuming it is available?
+ - how fast can we process the data on CPUs, assuming it is available?
 
 If we understand the bottlenecks, we might improve performance.  This
 is the key performance design principle for the Accelerator, and in
@@ -38,14 +41,17 @@ First, we note that the disk accessing pattern matters.  There is a
 significant average access time associated with accessing a random
 data block on a standard rotating hard drive.  This is because we have
 to wait for both the disks to rotate and the heads to move to the
-position where the data we need is stored.
+position where the data we need is stored.  Once the drive has found
+the data, streaming larger chunks from disk to RAM is a highly
+optimised process.
 
 Hard disk access time is in the range of **10 milliseconds**.  This
 implies that we can access about 100 random data chunks per second and
 drive.  Clearly, this is not much.
 
 In the future, solid state storage will be more common, but it is
-still a much more expensive technology.
+still a much more expensive technology.  But SSDs by themselves are
+not enough to have the best performance.
 
 
 
@@ -53,22 +59,34 @@ still a much more expensive technology.
 
 Traditional standard databases are designed for random access.  A lot
 of effort has been put in to predict, cache, partition, and by other
-means minimize the average access time per record.
+means minimize the average access time per record.  This is because
+the accessing pattern is not known in advance.
 
 If we just access a small random set of our data once in a while, 10
 milliseconds might not matter and databases are fine.  But if we are
-to process a large chunk of the data, the random access approach will
-be very slow.  In order to speed it up, significant effort has to be
-spent tuning the database for the particular dataset and application.
-Even then, throughput will be far from its theoretical optimum.  We
-believe that it is better to work on the actual problem than to spend
-time and resources tuning particular software systems.
+to process a large amount of the data records, the random access
+approach will be very slow.  Seek time will dominate, and since only
+small amounts of data are read after each seek, we cannot make use of
+the high data transfer rates associated with larger data chunks.
+
+In order to speed up data reads, significant effort has to be spent
+tuning the database for the particular dataset and application.  Even
+then, throughput will be far from its theoretical optimum.
+
+<!--- We believe that it is better to work on the actual problem than
+to spend time and resources tuning particular software systems.  -->
 
 If we are to process a large portion of the dataset, it is much more
 efficient to stream all the data and filter out and work on the
 relevant parts only.  If streaming is, say 1000 times faster than
 random access, streaming is better if we process as little as 0.1% of
 the data or more!
+
+To some extent, the access time reasoning holds for RAM access as
+well.  Modern dymanic RAM chips are optimised for burst transfers.  It
+takes a little while for the chip to start emitting data, but once it
+has started it runs at full speed.
+
 
 
 
@@ -81,10 +99,12 @@ The minimalistic way to read data very fast from disk is like this:
 
 This command will, as fast as possible and with minimal overhead, read
 data from disk and discard it.  There is no faster way to read data
-from disk, and if the CPU is fast enough, **this will saturate the
-disk to memory bandwidth**.
+from disk, and **this will saturate the disk to memory bandwidth**.
+(Assuming the CPU is fast enough and we use some standard file systems
+on the disks.)
 
-On a "standard" computer, we reach a few 100MB/s throughput.
+On a "standard" computer, we reach a few 100MB/s throughput with this
+approach.
 
 
 
@@ -97,20 +117,23 @@ _information_ per second by compressing the data on disk:
 ```
 
 Decompression is a lightweight operation on a modern CPU.  **The
-compression typically increases disk bandwidth by 5 to 10 times** on a
+compression typically increases disk bandwidth by 5 to 10 times [1] on a
 realistic dataset, so this is a favorable trade-off.
 
 When storing data in a compressed format, we can stream in the
 ballpark of 1000MB/s from disk to CPU.
+
+[1] Real life datasets are redundant, meaning that they compress
+relatively well.  5-10 times compression ration is common.
 
 
 
 #### Can we go Faster?
 
 Well, as soon as we start to process the data, the CPU load will go
-up, and we realize that processing speed of the CPU will be the new
-bottleneck.  We have turned a data-intensive problem into a
-processing-intensive one.
+up, and the processing speed of the CPU will be the new bottleneck.
+We have turned a data-intensive problem into a processing-intensive
+one.
 
 Fortunately, modern computers comes with several CPU
 cores, so we can read and decompress several files in parallel,
@@ -142,8 +165,8 @@ old-fashioned to use machines with little RAM.  AWS EC2 instances with
 RAM](https://aws.amazon.com/blogs/aws/now-available-ec2-instances-with-4-tb-of-memory/)
 and even [12TB
 RAM](https://aws.amazon.com/blogs/aws/now-available-amazon-ec2-high-memory-instances-with-6-9-and-12-tb-of-memory-perfect-for-sap-hana/)(!).
-are available just a few mouse clicks away.  In general, more RAM is
-better, but even a small increase in RAM may improve performance.
+have been available for a while.  In general, more RAM is better, but
+even a small increase in RAM may improve performance.
 
 The nice thing is that more RAM may increase performance without any
 extra work (due to the disk buffering).  In addition, data intensive
@@ -165,14 +188,14 @@ maximize data read and write performance, in particular:
 
 In addition, the Accelerator
 
-  - splits data into one file _per column_ and _slice_, and
-  - spreads data into _independent_ slices using a hashing algorithm.
-
+  - splits data into one file _per column_ and _slice_,
+  - spreads data into _independent_ slices using a hashing algorithm, and
+  - uses performance optimised file formats.
 
 
 #### One File Per Column
 
-A dataset may typically have several columns containing different
+A dataset typically has several columns containing different
 information.  Each processing/analysis task typically uses only a few
 of them simultaneously.
 
@@ -183,6 +206,7 @@ _necessary_ for the processing task at hand.
 
 
 #### Data Partitioning using a Hash Function
+
 Using a hash function to determine which data rows that goes into
 which slices is a simple way to open up for entirely independent
 parallel processing.
