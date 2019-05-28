@@ -174,7 +174,7 @@ algorithms such as collaborative filtering execute much much faster if
 the source data fits into RAM.
 
 
-
+![useful image]({{ site.url }}/assets/pages_performance/blog_fig_bottlenecks.pdf)
 
 
 ### The Accelerator Approach
