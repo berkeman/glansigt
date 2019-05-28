@@ -14,9 +14,11 @@ zz
 
 ww
 
+abs
+
 ![useful image]({{ site.url }}/images/pelle.jpeg)
 
-![GitHub Logo](/images/pelle.jpeg)
+![GitHub Logo](https://expertmakeraccelerator.org/glansigt/images/pelle.jpeg)
 
 <div><img src="/assets/pelle.jog" alt="coffee"></div>
 
