@@ -8,6 +8,11 @@ categories: performance
 
 xxx
 
+yy
+
+![useful image]({{ site.url }}/images/pelle.jpeg)
+
+
 This post will discuss the performance constraints of modern computer
 hardware and explain how the Accelerator is optimized towards maximum
 speed given these constraints.
