@@ -247,6 +247,9 @@ The fastest machine we've used produced these numbers in 2017:
 
 ![Performance Test]({{ site.url }}/assets/performance_numbers_from_installman.jpg)
 
+<div><img src="/assets/performance_numbers_from_installman.jpg" alt="coffee"></div>
+
+
 (Cut from the Accelerator's installation manual.)
 
 
