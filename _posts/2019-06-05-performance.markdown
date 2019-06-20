@@ -27,6 +27,9 @@ and so on.
 
 ### What is Limiting Execution Time?
 
+![Performance Test](https://exax.org/glansigt/images/computer.pdf)
+
+
 On a high level, a computer is composed of storage (disk, memory), and
 processing (CPU) hardware, and interconnects there between.  From a
 high level perspective, it makes sense to start with these two
