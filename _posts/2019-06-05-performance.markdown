@@ -15,6 +15,8 @@ constraints.
 
 ### The problem
 
+<p align="center"><img src="{{ site.baseurl }}assets/computer.png"> </p>
+
 Assume that we have a large dataset stored on disk, and that we want
 to process it as fast as possible.  Fast data processing is important
 for several reasons, for example
@@ -27,7 +29,6 @@ and so on.
 
 ### What is Limiting Execution Time?
 
-![Performance Test](https://exax.org/glansigt/images/computer.pdf)
 
 
 On a high level, a computer is composed of storage (disk, memory), and
@@ -248,7 +249,7 @@ fast operation.
 
 The fastest machine we've used produced these numbers in 2017:
 
-![Performance Test](https://exax.org/glansigt/assets/performance_numbers_from_installman.jpg)
+<p align="left"><img src="{{ site.baseurl }}assets/performance_numbers_from_installman.jpg"> </p>
 
 
 (Cut from the Accelerator's installation manual.)
