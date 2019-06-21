@@ -22,6 +22,7 @@ for several reasons, for example
   - shorter test iteration time makes development easier,
   - speed can be traded for cheaper hardware,
   - a faster solution is more "realtime".
+
 and so on.
 
 
