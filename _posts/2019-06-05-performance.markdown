@@ -244,6 +244,9 @@ Using a hash function to determine which data row that goes into which
 slice is a simple way to pave the way for entirely independent
 parallel processing.
 
+<p align="center"><img src="{{ site.baseurl }}assets/hashing.svg"> </p>
+
+
 If we hash our dataset on the `user` variable, for example, we will
 have data from each particular user in only one slice, meaning the we
 will never have to merge any results between slices/CPUs if we compute
