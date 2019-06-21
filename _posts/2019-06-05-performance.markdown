@@ -157,8 +157,6 @@ memory bandwidth:
   ...
 ```
 
-It is not possible to do faster, but please read on for more
-optimisations.
 
 
 
@@ -244,19 +242,25 @@ Using a hash function to determine which data row that goes into which
 slice is a simple way to pave the way for entirely independent
 parallel processing.
 
+The figure below illustrates a small dataset containing pairs of users
+and movies.  The upper part of the figure shows the original dataset,
+while the bottom part illustrates the dataset partitioned into three
+independent slices based on a hash function operating on the `user`
+column.
+
 <p align="center"><img src="{{ site.baseurl }}assets/hashing.svg"> </p>
 
+Now, any user will appear in exactly one slice.  If we do operations
+per user, such as collecting the set of movies for each user, there is
+no need to merge data between slices.  Computations can be carried out
+in parallel without any communication between processes.
 
-If we hash our dataset on the `user` variable, for example, we will
-have data from each particular user in only one slice, meaning the we
-will never have to merge any results between slices/CPUs if we compute
-some information per user.
-
-This data _partitioning before processing_ is the opposite of _merge
-after processing_ that is used by Map-Reduce.  Since hash partitioning
-is done before data computations, it is carried out only _once_,
-whereas for Map-Reduce, reduction is a necessary step in the
-processing.  Furthermore, hash partitioning a dataset executes fast.
+This data _partitioning before processing_ is kind of the opposite of
+_merge after processing_ that is being used by Map-Reduce.  Since hash
+partitioning is done before data computations, it is carried out only
+_once_, even if we do repeated computations.  For Map-Reduce, on the
+other hand, reduction is a necessary step in the processing.  Besides,
+hash partitioning a dataset is a relatively fast operation.
 
 
 
@@ -268,7 +272,8 @@ file with one billion lines and six columns, in total 79GB in size:
 <p align="left"><img src="{{ site.baseurl }}assets/performance_numbers_from_installman.jpg"> </p>
 
 
-(Cut from the Accelerator's installation manual.)
+This data is cut from the Accelerator's installation manual.  (The
+`csvimport` method has been improved significantly since then.)
 
 Note that all numbers are produced using high level Python programs.
 
