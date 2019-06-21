@@ -217,7 +217,7 @@ in light gray.
 
 
 
-#### Optimised storage format
+#### Optimised Storage Format
 
 If we know that a data column only contains, say, 64 bit floats, we
 can write that information in the header of the file, and then
@@ -252,7 +252,7 @@ fast operation.
 
 
 
-### Some performance figures
+### Some Performance Figures
 
 The fastest machine we've used produced these numbers in 2017:
 
