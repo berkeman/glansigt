@@ -15,8 +15,6 @@ constraints.
 
 ### The problem
 
-<p align="center"><img src="{{ site.baseurl }}assets/computer.svg"> </p>
-
 Assume that we have a large dataset stored on disk, and that we want
 to process it as fast as possible.  Fast data processing is important
 for several reasons, for example
@@ -30,8 +28,12 @@ and so on.
 ### What is Limiting Execution Time?
 
 On a high level, a computer is composed of storage (disk, memory), and
-processing (CPU) hardware, and interconnects there between.  From a
-high level perspective, it makes sense to start with these two
+processing (CPU) hardware, and interconnects there between, see figure
+below
+
+<p align="center"><img src="{{ site.baseurl }}assets/computer.svg"> </p>
+
+From a high level perspective, it makes sense to start with these two
 questions:
 
  - How fast can we read our data from disk?
@@ -206,11 +208,11 @@ Therefore it makes sense to separate the columns into independent
 files, so that the read bandwidth is only occupied with data that is
 _necessary_ for the processing task at hand.
 
-The image below shows how a five-column tabular dataset is separated
+<p align="center"><img src="{{ site.baseurl }}assets/dataset.svg"> </p>
+
+The image above shows how a five-column tabular dataset is separated
 into four slices having five column files each.  Column four is marked
 in light gray.
-
-<p align="center"><img src="{{ site.baseurl }}assets/dataset.svg"> </p>
 
 
 
