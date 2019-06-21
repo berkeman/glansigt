@@ -6,10 +6,10 @@ categories: performance
 ---
 
 The Accelerator is able to process hundreds of millions of data rows
-per second on a single computer.  This post will discuss the
-performance bottlenecks of a modern computer and explain how the
-Accelerator is optimized towards maximum speed given these hardware
-constraints.
+per second on a single computer using the Python programming language.
+This post will discuss the performance bottlenecks of a modern
+computer and explain how the Accelerator is optimized towards maximum
+speed given these hardware constraints.
 
 
 
@@ -28,7 +28,7 @@ and so on.
 
 ### What is Limiting Execution Time?
 
-On a high level, a computer is composed of storage (disk, memory), and
+On a high level, a computer is composed of storage (disk, memory),
 processing (CPU) hardware, and interconnects there between, see figure
 below
 
@@ -48,30 +48,32 @@ at how it works and what can be done.
 
 
 
-#### Storage:  Random Access Versus Streaming
+### Storage:  Random Access Versus Streaming
 
 First, we note that the disk accessing pattern matters.  There is a
 significant average access time associated with accessing a random
 data block on a standard rotating hard drive.  This is because we have
 to wait for both the disks to rotate and the heads to move to the
-position where the data we need is stored.
+position where the data we need is stored.  Once the data is in
+position, streaming it from disk to memory is fast.
 
 Hard disk access time is in the range of **10 milliseconds**.  This
 implies that we can access about 100 random data chunks per second and
 drive.  Clearly, this is not much.
 
 Access times are significantly improved using solid state storage
-technology.  Prices will go down in the future, but today this
-technology is significantly more expensive.
+technology, but at a significantly higher cost.
 
 
 
 #### Access Times Matters
 
-Traditional standard databases are designed for random access.  The
-database does not have a clue about what you are going to do next.  A
-lot of effort has been put in to predict, cache, partition, and by
-other means minimize the average access time per database record.
+One way to store the data to be analysed is to use a traditional
+relational database.  Such databases are designed for random access.
+The database does not have a clue about what your next operation will
+be.  Therefore, a lot of effort has been put in to predict, cache,
+partition, and by other means minimize the average access time per
+database record.
 
 If we just access a small random set of our data once in a while, 10
 milliseconds might not matter and databases are fine.  But if we are
@@ -83,16 +85,16 @@ believe that it is better to work on the actual problem than to spend
 time and resources tuning particular software systems.
 
 If we are to process a large portion of the dataset, it is much more
-efficient to stream all the data and filter out and work on the
-relevant parts only.  If streaming is, say 1000 times faster than
-random access, streaming is better if we process as little as 0.1% of
-the data or more!
+efficient to stream _all_ or most of the data and filter out and work
+on the relevant parts only.  If streaming is, say 1000 times faster
+than random access, streaming is better if we process as little as
+0.1% of the data or more!
 
 
 
 ### Disk Throughput:  How Fast can we Read from Disk?
 
-The next thing to look at is how fast we can transfer data from disk
+The next thing to look at is how fast we can stream data from disk
 to memory.  The minimalistic way to read data very fast from disk is
 like this:
 
@@ -102,8 +104,9 @@ like this:
 
 This command will, as fast as possible and with minimal overhead, read
 data from disk and discard it.  There is no faster way to read data
-from disk, at least when using a standard file system, and if the CPU
-is fast enough, **this will saturate the disk to memory bandwidth**.
+from disk, at least when using a standard file system.  If the disk
+and CPU are fast enough, **this will saturate the disk to memory
+bandwidth**.
 
 On a "standard" computer, we reach a few 100MB/s throughput.
 
@@ -126,7 +129,8 @@ interesting since they contain a minimum amount of patterns and
 repetitions.)
 
 When storing data in a compressed format, we can stream in the
-ballpark of 1000MB/s from disk to CPU.
+ballpark of 1000MB/s from disk to CPU, which is faster than the disk
+interface.
 
 Note also that streaming data in a linear fashion from disk to memory
 and memory to CPU yields a completely predictable addressing pattern.
@@ -142,8 +146,8 @@ up, and we realize that processing speed of the CPU will be the new
 bottleneck.  We have turned a data-intensive problem into a
 processing-intensive one.
 
-Fortunately, modern computers comes with several CPU cores, so we can
-read and decompress several files in parallel, thereby increasing the
+Fortunately, modern computers come with several CPU cores, so we can
+read and decompress multiple files in parallel, thereby increasing the
 computational power per data item while maintaining the high disk to
 memory bandwidth:
 
@@ -153,7 +157,8 @@ memory bandwidth:
   ...
 ```
 
-It is not possible to do faster, but please read on.
+It is not possible to do faster, but please read on for more
+optimisations.
 
 
 
@@ -187,8 +192,8 @@ the source data fits into RAM.
 The important tricks that we've just seen are used by the Accelerator to
 maximize data read and write performance, in particular:
 
-  - Data is stored in a compressed format, and
-  - Data is split into several files, _slices_, and processed in
+  - data is stored in a compressed format, and
+  - data is split into several files, _slices_, and processed in
     parallel.
 
 In addition, the Accelerator
@@ -203,11 +208,10 @@ In addition, the Accelerator
 
 A dataset may typically have several columns containing different
 information.  Each processing/analysis task typically uses only a few
-of them in each processing task.
-
-Therefore it makes sense to separate the columns into independent
-files, so that the read bandwidth is only occupied with data that is
-_necessary_ for the processing task at hand.
+of them in each processing task.  Therefore it makes sense to separate
+the columns into independent files, so that the read bandwidth is occupied
+only with data that is _necessary_ for the processing task at
+hand.
 
 <p align="center"><img src="{{ site.baseurl }}assets/dataset.svg"> </p>
 
@@ -219,23 +223,25 @@ in light gray.
 
 #### Optimised Storage Format
 
-If we know that a data column only contains, say, 64 bit floats, we
-can write that information in the header of the file, and then
-concatenate all the floats together without separation.  Similar
-efficient approaches exists for the various data types available,
-optimising both storage requirements and parsing times.
+Data can be stored very efficiently on disk.  If we know that a data
+column only contains, say, 64 bit floats, we can write that
+information in the header of the file, and then concatenate all the
+floats together without separation.  Variable length types prefix each
+data item with a record containing its length.  Similar efficient
+approaches exists for all the various data types available, optimising
+both storage requirements and parsing times.
 
-In addition, if the dataset is small, slice files are actually
-concatenated into fewer files using indexing.  This is done in order
-to keep the number of small files and total disk access time to a
-minimum.
+In addition, if a dataset is small, slice files are concatenated into
+fewer larger files, and in-file indexing to access the data.  This is
+done in order to keep the number of small files and total disk access
+time to a minimum.
 
 
 
 #### Data Partitioning using a Hash Function
 
-Using a hash function to determine which data rows that goes into
-which slices is a simple way to open up for entirely independent
+Using a hash function to determine which data row that goes into which
+slice is a simple way to pave the way for entirely independent
 parallel processing.
 
 If we hash our dataset on the `user` variable, for example, we will
@@ -243,23 +249,25 @@ have data from each particular user in only one slice, meaning the we
 will never have to merge any results between slices/CPUs if we compute
 some information per user.
 
-This is the opposite of _Map-Reduce_, where data is _partitioned
-before processing_ instead of _merged after processing_.  Since
-hashing is done before data computations, it has to be carried out
-only once, whereas for map-reduce, reduction is a key step in the
-processing.  Furthermore, hashing a dataset also happens to be a very
-fast operation.
+This data _partitioning before processing_ is the opposite of _merge
+after processing_ that is used by Map-Reduce.  Since hash partitioning
+is done before data computations, it is carried out only _once_,
+whereas for Map-Reduce, reduction is a necessary step in the
+processing.  Furthermore, hash partitioning a dataset executes fast.
 
 
 
 ### Some Performance Figures
 
-The fastest machine we've used produced these numbers in 2017:
+The fastest machine we've used produced these numbers in 2017 on a
+file with one billion lines and six columns, in total 79GB in size:
 
 <p align="left"><img src="{{ site.baseurl }}assets/performance_numbers_from_installman.jpg"> </p>
 
 
 (Cut from the Accelerator's installation manual.)
+
+Note that all numbers are produced using high level Python programs.
 
 
 
