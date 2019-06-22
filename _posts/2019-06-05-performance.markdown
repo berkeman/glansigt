@@ -32,7 +32,7 @@ On a high level, a computer is composed of storage (disk, memory),
 processing (CPU) hardware, and interconnects there between, see figure
 below
 
-<p align="center"><img src="{{ site.baseurl }}assets/computer.svg"> </p>
+<p align="center"><img src="{{ site.url }}/assets/computer.svg"> </p>
 
 From a high level perspective, it makes sense to start with these two
 questions:
@@ -211,7 +211,7 @@ the columns into independent files, so that the read bandwidth is occupied
 only with data that is _necessary_ for the processing task at
 hand.
 
-<p align="center"><img src="{{ site.baseurl }}assets/dataset.svg"> </p>
+<p align="center"><img src="{{ site.url }}/assets/dataset.svg"> </p>
 
 The image above shows how a five-column tabular dataset is separated
 into four slices having five column files each.  Column four is marked
@@ -248,7 +248,7 @@ while the bottom part illustrates the dataset partitioned into three
 independent slices based on a hash function operating on the `user`
 column.
 
-<p align="center"><img src="{{ site.baseurl }}assets/hashing.svg"> </p>
+<p align="center"><img src="{{ site.url }}/assets/hashing.svg"> </p>
 
 After hash partitioning, any user will appear in exactly one slice.
 If we do operations per user, such as for example collecting the set
@@ -271,7 +271,7 @@ The fastest machine we've used produced these numbers in 2017 on an
 example file with one billion lines and six columns, in total 79GB in
 size:
 
-<p align="left"><img src="{{ site.baseurl }}assets/performance_numbers_from_installman.jpg"> </p>
+<p align="left"><img src="{{ site.url }}/assets/performance_numbers_from_installman.jpg"> </p>
 
 
 This data is cut from the Accelerator's installation manual, and the
