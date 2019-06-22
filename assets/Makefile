@@ -5,4 +5,4 @@ SHELL := /bin/bash
 
 
 links:
-	ln -s -f ../figures/*.svg .
+	ln  -f ../figures/*.svg .
