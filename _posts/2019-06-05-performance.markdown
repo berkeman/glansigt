@@ -250,13 +250,14 @@ column.
 
 <p align="center"><img src="{{ site.baseurl }}assets/hashing.svg"> </p>
 
-Now, any user will appear in exactly one slice.  If we do operations
-per user, such as collecting the set of movies for each user, there is
-no need to merge data between slices.  Computations can be carried out
-in parallel without any communication between processes.
+After hash partitioning, any user will appear in exactly one slice.
+If we do operations per user, such as for example collecting the set
+of movies for each user, there is no need to merge data between
+slices.  Computations can be carried out in parallel _without any
+communication between processes_.
 
-This data _partitioning before processing_ is kind of the opposite of
-_merge after processing_ that is being used by Map-Reduce.  Since hash
+This data partitioning _before_ processing is kind of the opposite of
+merge _after_ processing that is being used by Map-Reduce.  Since hash
 partitioning is done before data computations, it is carried out only
 _once_, even if we do repeated computations.  For Map-Reduce, on the
 other hand, reduction is a necessary step in the processing.  Besides,
@@ -266,16 +267,19 @@ hash partitioning a dataset is a relatively fast operation.
 
 ### Some Performance Figures
 
-The fastest machine we've used produced these numbers in 2017 on a
-file with one billion lines and six columns, in total 79GB in size:
+The fastest machine we've used produced these numbers in 2017 on an
+example file with one billion lines and six columns, in total 79GB in
+size:
 
 <p align="left"><img src="{{ site.baseurl }}assets/performance_numbers_from_installman.jpg"> </p>
 
 
-This data is cut from the Accelerator's installation manual.  (The
-`csvimport` method has been improved significantly since then.)
+This data is cut from the Accelerator's installation manual, and the
+corresponding code is open sourced by eBay.  Note that all numbers are
+produced using high level Python programs, and that the `csvimport`
+method has been improved significantly in later versions of the
+Accelerator.
 
-Note that all numbers are produced using high level Python programs.
 
 
 
@@ -288,3 +292,12 @@ compression, slicing, partitioning, and parallel execution to mitigate
 the computer's bottlenecks and maximize performance.  The result is a
 powerful piece of software that can do incredible things at high speed
 and very low cost.
+
+
+
+### Additional Resources
+
+[The Accelerator's Homepage (exax.org)](https://exax.org)  
+[The Accelerator on Github/eBay](https://github.com/ebay/accelerator)  
+[Installation Manual with Performance Test](https://berkeman.github.io/pdf/acc_install.pdf)  
+[Reference Manual](https://berkeman.github.io/pdf/acc_manual.pdf)  
