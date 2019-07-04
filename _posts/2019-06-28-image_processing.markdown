@@ -11,28 +11,42 @@ images for two reasons
   - processing is carried out in parallel, and
   - book keeping of relations between input and output images is automatic.
 
+in this post we will look at how this can be carried out in practice.
 
 
-### Parallel Image Processing
+
+### Parallel Image Processing Example
+
+Let's assume that we want to create thumbnails of a large number of
+jpeg images stored in a certain directory.  This is an operation that
+is ideal for parallel processing, since resampling an image is a
+computationally expensive task and images are independent of each
+other.
+
+
+
+### Two Storage Models
+
+It is trivial to write simple parallel programs using the Accelerator.
 There are two fundamentally different approaches to storing images for
 parallel processing using the Accelerator:
 
-  1. as individual files, or
-  2. using the Accelerator's datasets for streaming processing
+  1. as individual image files, or
+  2. using the Accelerator's datasets for streaming processing.
 
 The second approach, using datasets, is the preferred choice, but
 we'll have a look at both to see how they work.
 
 
 
-#### Using Independent Image Files
-Let's assume that we want to create thumbnails of a large number of
-jpeg images stored in a certain directory.  To speed up the
-processing, we want to processes images in parallel.  Using the
-Accelerator it is trivial to parallelise processing.
+#### Using Image Files Directly
 
-To keep numbers low, let's assume that we are going to use three
-parallel processes.
+
+To keep things simple, let's assume that we are going to use three
+parallel processes.  A parallel program may split the list of all
+input filenames into three slices and send these lists to thee
+different processes.  Each process reads, transforms, and writes one
+image at a time, see the figure below
 
 <p align="center"><img src="{{ site.url }}/assets/image_files.svg"> </p>
 
@@ -57,9 +71,30 @@ def analysis(prepare_res, sliceno, params):
         im = Image.thumbnail(options.size)
         im.save(fn + '.thumbnail', "JPEG")
 ```
+
+```python
+from PIL import Image
+
+options=dict(files=[], size=(100, 100))
+
+def analysis(sliceno, params):
+    files = options.files[sliceno::params.slices]    # work on a slice of all filenames
+    for fn in files:
+        im = Image.open(fn)
+        im = Image.thumbnail(options.size)
+        im.save(fn + '.thumbnail', "JPEG")
+```
+
+
 That is all.  This job will process the images in parallel!
 
+
+
+
 #### Using the Accelerator's Dataset Storage Format
+
+<p align="center"><img src="{{ site.url }}/assets/image_dataset1.svg"> </p>
+
 
 The main program will look something like this
 
