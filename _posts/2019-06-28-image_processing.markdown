@@ -54,7 +54,7 @@ transforms, and writes one image at a time, see the figure below
 
 <p align="center"><img src="{{ site.url }}/assets/image_files.svg"> </p>
 
-Here is the source code
+Here is the complete source code
 
 ```python
 from PIL import Image
@@ -81,21 +81,56 @@ variable.  This program is all that is needed.
 #### Using the Accelerator's Dataset Storage Format
 
 Now, we'll turn to using the Accelerator's internal dataset type for
-internal representation of images.  What we do next can be seen as a
-preparation for writing something much more complex than thumbnail
-generation.  First, we start by creating two programs that transform
-to and from the internal representation, i.e. programs that
+internal representation of images.  Datasets are efficient
+abstractions that simplifies the design of more complicated programs,
+so what we do next can be seen as a preparation for writing something
+much more complex than thumbnail generation.  We are going to write
+three programs, first two helpers that
 
   - read images from a directory and "imports" them to an Accelerator dataset, and
   - converts a dataset of images to a set of image files.
 
-Visually, the programs may be represented as follows
+and then 
+
+  - the actual processing, that reads and appends to a dataset.
+
+The interesting things happen in the processing job, which we will get
+to shortly, but first we briefly have a look at the two helper programs.
+
+
+
+##### Importing Image Files into a Dataset
+
+This program is much like the previous example, but instead of writing
+output images to files, it writes to a dataset.  It stores the images
+as well as some meta information, in this case the filenames and the
+image sizes, see figure below
 
 <p align="center"><img src="{{ site.url }}/assets/image_tods.svg"> </p>
 
-xx
+Each process handle a slice of the list of input files and stores them
+in a corresponding dataset slice.  Columns are stored in independent
+files.
+
+
+
+
+##### Exporting Images in a Dataset back to Files
+
+The corresponding "write to image files" program may be visualised
+like this.  The program reads the `image` and `filename`-columns...
 
 <p align="center"><img src="{{ site.url }}/assets/image_fromds.svg"> </p>
+
+
+Visually, the programs may be represented as follows
+
+
+
+
+
+xx
+
 
 xx
 
