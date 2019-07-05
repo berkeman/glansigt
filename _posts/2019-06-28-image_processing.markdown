@@ -23,54 +23,38 @@ is ideal for parallel processing, since resampling an image is a
 computationally expensive task and images are independent of each
 other.
 
+At setup time, the Accelerator is configured with the number of
+parallel processes to use.  Typically, this number is equal or close
+to the number of available CPU cores on the computer.  To keep things
+simple, let's assume that this number is three.
+
 
 
 ### Two Storage Models
 
-It is trivial to write simple parallel programs using the Accelerator.
-There are two fundamentally different approaches to storing images for
-parallel processing using the Accelerator:
+The Accelerator is designed for parallel processing.  It also provides
+efficient data storage formats and operators for high speed stream
+processing of large datasets.  In this post, we'll have a brief look
+at both approaches, that is, we can either store images
 
   1. as individual image files, or
   2. using the Accelerator's datasets for streaming processing.
 
-The second approach, using datasets, is the preferred choice, but
-we'll have a look at both to see how they work.
+The second approach, using datasets, is the more flexible choice, but
+for some small work tasks it might do as well using plain files.
 
 
 
 #### Using Image Files Directly
 
-
-To keep things simple, let's assume that we are going to use three
-parallel processes.  A parallel program may split the list of all
-input filenames into three slices and send these lists to thee
-different processes.  Each process reads, transforms, and writes one
-image at a time, see the figure below
+Our parallel program receives a list of images to process as input.
+Each process will slice this list into a unique subset of images to be
+considered by that particular process.  Each process reads,
+transforms, and writes one image at a time, see the figure below
 
 <p align="center"><img src="{{ site.url }}/assets/image_files.svg"> </p>
 
-
-The job takes the path to the images and the thumbnail size as input options
-
-```python
-from glob import glob
-from os.path import join
-from PIL import Image
-
-options=dict(path='', size=(100, 100))
-
-def prepare():
-    return glob(join(options.path, '*.jpg'))        # return list of all image filenames
-
-def analysis(prepare_res, sliceno, params):
-    files = prepare_res[sliceno::params.slices]     # work on a slice of all filenames
-
-    for fn in files:
-        im = Image.open(fn)
-        im = Image.thumbnail(options.size)
-        im.save(fn + '.thumbnail', "JPEG")
-```
+Here is the source code
 
 ```python
 from PIL import Image
@@ -85,15 +69,41 @@ def analysis(sliceno, params):
         im.save(fn + '.thumbnail', "JPEG")
 ```
 
-
-That is all.  This job will process the images in parallel!
+Input options are the list of image files and the shape of the output
+thumbnail image.  The function `analysis()` will be forked and
+executed in `params.slices` parallel processes.  Each process receives
+a unique number between zero and the number of slices in the `sliceno`
+variable.  This program is all that is needed.
 
 
 
 
 #### Using the Accelerator's Dataset Storage Format
 
-<p align="center"><img src="{{ site.url }}/assets/image_dataset1.svg"> </p>
+Now, we'll turn to using the Accelerator's internal dataset type for
+internal representation of images.  What we do next can be seen as a
+preparation for writing something much more complex than thumbnail
+generation.  First, we start by creating two programs that transform
+to and from the internal representation, i.e. programs that
+
+  - read images from a directory and "imports" them to an Accelerator dataset, and
+  - converts a dataset of images to a set of image files.
+
+Visually, the programs may be represented as follows
+
+<p align="center"><img src="{{ site.url }}/assets/image_tods.svg"> </p>
+
+xx
+
+<p align="center"><img src="{{ site.url }}/assets/image_fromds.svg"> </p>
+
+xx
+
+<p align="center"><img src="{{ site.url }}/assets/image_ds2ds.svg"> </p>
+
+
+
+The Accelerator's internal dataset type
 
 
 The main program will look something like this
