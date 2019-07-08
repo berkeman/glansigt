@@ -1,33 +1,37 @@
 ---
 layout: post
-title:  "Parallel Image Processing using the Accelerator"
+title:  "Parallel Image Processing using the Accelerator Part 1:  The Basics"
 date:   2019-06-28 00:00:00
 categories: processing
 ---
 
 The Accelerator is ideal for batch processing of large quantities of
-images for two reasons
+images for two main reasons:
 
-  - processing is carried out in parallel, and
+  - Processing is carried out in parallel, and
   - book keeping of relations between input and output images is automatic.
 
-in this post we will look at how this can be carried out in practice.
+How this is carried out in practice is the topic for this and the next
+post, "NN something something..".  This post will provide the basics,
+and the next will show...
+
+
 
 
 
 ### Parallel Image Processing Example
 
-Let's assume that we want to create thumbnails of a large number of
-jpeg images stored in a certain directory.  This is an operation that
-is ideal for parallel processing, since resampling an image is a
-computationally expensive task and images are independent of each
-other.
+We'll start with something simple.  Let's assume that we want to
+create thumbnails of a large number of jpeg images stored in a certain
+directory.  This task is ideal for parallel processing, since
+resampling an image is a computationally expensive task and images are
+independent of each other.
 
-At setup time, the Accelerator is configured with the number of
-parallel processes to use.  Typically, this number is equal or close
-to the number of available CPU cores on the computer.  To keep things
-simple, let's assume that this number is three.
-
+Throughout this post, we'll assume that the number of parallel
+processes is three (3) to keep things simple.  In an actual setup,
+this number is equal or close to the number of available CPU cores on
+the computer.
+OA
 
 
 ### Two Storage Models
@@ -54,7 +58,7 @@ transforms, and writes one image at a time, see the figure below
 
 <p align="center"><img src="{{ site.url }}/assets/image_files.svg"> </p>
 
-Here is the complete source code
+And here is the source code
 
 ```python
 from PIL import Image
@@ -69,16 +73,76 @@ def analysis(sliceno, params):
         im.save(fn + '.thumbnail', "JPEG")
 ```
 
+In order to execute the program, we need to write a small build script
+containing the build rules
+
+```python
+def main(u):
+    u.build('thumbnailer', options=dict(files=['file0.jpg', ...], size=(256,256)))
+```
+
 Input options are the list of image files and the shape of the output
 thumbnail image.  The function `analysis()` will be forked and
 executed in `params.slices` parallel processes.  Each process receives
 a unique number between zero and the number of slices in the `sliceno`
-variable.  This program is all that is needed.
+variable.
 
 
 
 
-#### Using the Accelerator's Dataset Storage Format
+#### Using More of the Accelerator's Features
+
+The previous example is just what is needed to solve the thumbnails
+task, and it is easy to expand it with more features.  For more
+advanced tasks, such as ..., however, we can improve by
+
+  - making use of the build system to make sure that output from previously built jobs is reused
+
+  - keep track of intermediate results
+
+  - associate any number of additional pieces of information to each image
+
+  - reduce the number of intermediate files, and thereby seek time
+
+
+Here is a build script showing how we partition the problem
+
+```python
+def main(u):
+    files = glob.glob(os.path.join(path, 'file*.jpg'))
+    jid_imp = u.build('import_images', options=dict(files=files))
+    jid_tmb = u.build('thumbnailer',   options=dict(size=(256,256), datasets=dict(source=jid_imp)))
+    jid_exp = u.build('export_images', options=dict(column='thumb', datasets=dict(source=jid_tmb)))
+```
+
+The most interesting program is the one in the middle, `thumbnailer`,
+that actually computes the thumbnails.  The programs before and after
+are just converting to and from the Accelerator's internal formats.
+
+
+
+
+Now why on earth do we want to complicate things like this?
+
+
+The figure below illustrates how the `thumbnailer` program works
+
+<p align="center"><img src="{{ site.url }}/assets/image_ds2ds.svg"> </p>
+
+Each one of the parallel processes reads one slice of the `image`
+column, creates a thumbnail, and then writes to a new colum named
+`thumb`.  Note that
+
+- the new column is appended to the existing "source" dataset, and
+- there is no need to read any of the `shape` or `filename` data from disk.
+
+Appending columns is almost for free, it just creates a link between
+datasets.  The advantage we get from appending columns is that we keep
+everything we have computed and know about each image together.  Not
+reading irrelevant columns is obvious for performance reasons.
+
+
+
 
 Now, we'll turn to using the Accelerator's internal dataset type for
 internal representation of images.  Datasets are efficient
@@ -134,7 +198,6 @@ xx
 
 xx
 
-<p align="center"><img src="{{ site.url }}/assets/image_ds2ds.svg"> </p>
 
 
 
