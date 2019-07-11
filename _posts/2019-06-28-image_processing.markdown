@@ -28,8 +28,9 @@ network inference, will be discussed in an upcoming post.
 ### Parallel Image Processing Example
 
 A simple "easy to understand" example is that of creating image
-thumbnails (i.e. downscaled copies) of a large set of images, see
-figure.
+thumbnails (i.e. downscaled copies) of a large set of images.  The
+figure below depicts convertion from a 4k video frame down to a size
+that is more reasonabe for a neural network to operate on
 
 <p align="center"><img src="{{ site.url }}/assets/image_rescale.svg"> </p>
 
@@ -247,20 +248,22 @@ filename.
 
 ### Source Code
 
-Here is the source code for the programs above.  Note that the
-Accelerator comes with a **minimum of dependencies**, and this is
-considered to be a feature.  The Accelerator dataset supports a
-variety of different types, but images is not one of them.  An
-efficient way to handle images is to type them to the `bytes` type,
-which supports arbitrary binary data up to 2GB per entry.
-Unfortunately, there does not seem to be a Pillow method to generate
-binary data from an image, so we use this wrapper
+The current release of the Accelerator does not include explicit
+support for images.  The main reason being that the Accelerator comes
+with a **minimum of dependencies**, and this is considered to be a
+feature.  (It is possible that a dedicated image add-on package will
+be added in the future, though.)  There are a number of supported data
+types, though, and storing images is just a layer on top of the
+`bytes` type.  A data value typed as `bytes` could contain any binary
+data and be up to 2GB in size.  Unfortunately, there does not seem to
+be a Pillow method to generate binary data from an image, so we use
+this wrapper
 
 ```python
 from io import BytesIO
-def pil2bytes(im):
+def pil2bytes(im, format='BMP'):
     with BytesIO() as output:
-        im.save(output, format="BMP")
+        im.save(output, format=format)
         contents = output.getvalue()
     return contents
 ```
@@ -273,25 +276,62 @@ BMP is a lossless format with fast encoding and decoding.
 #### Import
 
 
-#### Thumbnailer
-
-#### Export
-
-
-The Accelerator's internal dataset type
-
-
-The main program will look something like this
-
-It will read a column `image` and append a column `thumb` 
+The program starts with a single process executing the `prepare()`
+function that sets up a new dataset writer object with three columns.
 
 ```python
-from io import BytesIO
+from . import pilhelpers
 
-from . import pil2bytes
+options = dict(filename=[])
+
+def prepare():
+    dw = DatasetWriter()
+    dw.add('image', 'bytes')
+    dw.add('shape', 'json')
+    dw.add('filename', 'unicode')
+    return dw
+```
+
+The raw (compressed) image is stored as `bytes` and the filename as
+`unicode`.  Image shape data is a tuple `(width, height)`, and is
+therefore stored as `json` in the dataset.  The dataset writer object
+is return in order to be passed to the functions executing next.
+
+The running process is forked into a number of parallel processes
+executing the `analysis()` function shown below.  The writer object
+returned by `prepare()` is input and referenced by the name
+`prepare_res`.  The input `sliceno` holds unique number for the
+process, and `params` is a dict containing various variables, among
+them `slices`, which holds the total number of parallel processes.
+
+```python
+def analysis(prepare_res, sliceno, params):
+    dw = prepare_res
+    filenames = options.filenames[sliceno::params.slices]
+    for fname in filenames:
+        im = Image.open(fname)
+        dw.write(pilhelpers.pil2bytes(im), im.shape, fname)
+```
+
+Each `analysis()`-process selects a unique slice of the input filename
+list, read the files one a a time, and writes to the dataset.
+
+
+ABSOLUTE_FILENAMES ÄR INTE OKEJ, VAD HÄNDER DÅ VID SKRIVNING???
+
+
+
+
+
+
+#### Thumbnailer
+
+Below is the complete `thumbnailer` program.
+```python
+from io import BytesIO
+from . import pilhelpers
 
 datasets=('parent',)
-
 options=dict(size=(100, 100))
 
 def prepare():
@@ -301,22 +341,44 @@ def prepare():
 
 def analysis(prepare_res, sliceno):
     dw = prepare_res
-
-    for im in datasets.source.iterate(sliceno, 'image'):
+    for im in datasets.parent.iterate(sliceno, 'image'):
         im = Image.open(BytesIO(im)
         im.thumbnail(options.size)
-        dw.write(helpers.pil2bytes(im))
+        dw.write(pilhelpers.pil2bytes(im))
 ```
-The `pil2bytes` is necessary since PIL objects lack a way to create a bytestring directly.
 
-```python 
-from io import BytesIO
-def pil2bytes(im):
-    with BytesIO() as output:
-        im.save(output, format="BMP")
-        contents = output.getvalue()
-    return contents
+The dataset writer is fed with a `parent` argument, instructing it to
+append columns to an existing dataset instead of creating a new one.
+The `analysis()` functions are forked and execute in parallel on all
+slices, each iterating over one slice of the input dataset.  The
+`BytesIO()` thing is used to convert a binary blob from the dataset
+into a "file" which can be opened by PIL.
+
+
+
+
+
+#### Export
+
+The following program is minimal.  Files are written to disk in the
+internal format, i.e. BMP, and the filename extension is left unchanged.  Also, images are written to current work dir, and
+there is a BIG PROBLEM if the filenames have absolute paths!!!!!!!!!!
+
+
+```python
+options=dict(column='thumb')
+
+def analysis(sliceno):
+for im, fn in datasets.source.iterate(sliceno, (options.column, 'filename',)):
+    with open(fn, 'wb') as fh:
+        fh.write(im)
 ```
+
+
+
+
+
+### Conclusion
 
 
 `depend_extra`
