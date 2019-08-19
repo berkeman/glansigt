@@ -1,0 +1,118 @@
+---
+layout: post
+title:  "The Accelerator's Build System"
+date:   2019-08-01 00:00:00
+categories: examples
+---
+
+In this post we'll look at how the Accelerator's build system works,
+why it is designed like it is, and how to _save time and reduce
+probability of error_ by using it.
+
+
+### Building a Job
+
+The **job** is the atomic unit of program execution on the
+Accelerator.  All information associated with a job is stored in a job
+specific directory.  The return value from a job build operation is a
+reference to such a directory.
+
+A job is only built if it has not been built before, see
+figure
+
+<p align="center"><img src="{{ site.url }}/assets/build_timeline.svg"> </p>
+
+To know if the job has been built before, the Accelerator keeps a
+database of all successfully completed build requests, including a
+hash digest of each job's source code, and each build request is
+compared to this database.
+
+
+
+### Inputs to Build
+To build a job three things are required
+
+ - the program source code,
+ - references to input data, and
+ - input parameters (i.e. options).
+
+
+
+### Building Process
+
+When a job is built, the following happens
+
+  1. A new job directory is created.
+  2. Everything needed to execute the job is copied into the job directory.
+  3. New processes starts execution and learns what to do by reading
+     the information stored in the job directory.
+  4. The new job is executing and output is stored in the job
+     directory.
+  5. When the job completes, additional profiling information is
+     stored in the job directory.
+
+For each build, a new job directory is created.  Job directories can
+be separated into different _work directories_, physically separating
+different tasks or users for example.
+
+
+### Job Dependencies
+A more complicated task can be separated into several jobs.
+References to previous jobs can be used as input parameters to new
+jobs.  This is how to create directed job execution graphs.
+
+
+### Datasets and Parallel Data Processing
+Jobs could also be data containers.  The possibility to link jobs to
+eachother brings some interesting advantages.  This is discussed in
+more detail in another post.
+
+
+
+
+### Why this Build System?
+The way the Accelerator's build system works has several advantages
+
+
+#### All Information About a Job is Stored Together in a Single Directory
+Having all results, source code, parameters, and profiling information
+in one place is great for observability and transparency.  Looking
+into a job directory makes it totally clear which program, parameter
+set, and input data that was used to generate a particular result.
+
+
+#### Jobs are Only Built if not Built Before
+This saves a lot of time.  Completed jobs can be "re-used", once or very
+frequently, and jobs can even be shared between different users.
+
+
+
+#### Only Jobs Depending on a Modified Job are Re-Built
+A change in the source code will only affect the current job and the
+jobs depending on it.  Only those parts that are affected by the
+change will be re-executed, which saves time.
+
+#### The build system will ensure that parts affected by a modification will be re-executed
+To say the previous statement it in another way, the build system
+makes sure that parts affected by the change will be re-executed.
+
+
+#### Validation, Does This Output Correspond to this Program/Data/Parameters?
+
+A build script can be run at any time to retrieve references to all
+jobs built by it.  Thus, by reading the script and checking the
+referenced job directories, it is clear what input and parameters that
+are in use to create a certain output.
+
+It answers questions like these
+
+ - **"- Did I run this script before or after the code change?"**  Just run
+    the build script and see what happens.  It if returns immediately
+    it is up to date.  If some jobs are re-executed, there was a
+    modification in the source code that was made after the last run.
+	
+ - **"- Does this output take the latest data into account?"**
+   Again, read and the run the script and see.
+
+
+### Conclusion
