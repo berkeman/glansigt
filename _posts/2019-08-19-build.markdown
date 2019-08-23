@@ -5,17 +5,18 @@ date:   2019-08-01 00:00:00
 categories: examples
 ---
 
-In this post we'll look at how the Accelerator's build system works,
-why it is designed like it is, and how to _save time and reduce
-probability of error_ by using it.
+This post describes the basics of the Accelerator's build system, how
+it works, why it is designed the way it is, and how it can be used to
+_reduce both execution time and probability of making mistakes_.
 
 
 ### Building a Job
 
-The **job** is the atomic unit of program execution on the
-Accelerator.  All information associated with a job is stored in a job
-specific directory.  The return value from a job build operation is a
-reference to such a directory.
+The _job_ is the atomic unit of program execution on the
+Accelerator.  "Building a job" means executing a piece of code.  All
+information associated with a job is stored in a job specific
+directory to be used at any time.  The return value from a job build
+operation is a reference to such a directory.
 
 A job is only built if it has not been built before, see
 figure
@@ -23,56 +24,68 @@ figure
 <p align="center"><img src="{{ site.url }}/assets/build_timeline.svg"> </p>
 
 To know if the job has been built before, the Accelerator keeps a
-database of all successfully completed build requests, including a
-hash digest of each job's source code, and each build request is
-compared to this database.
+database containing information on all successfully completed build
+requests.  This information includes a hash digest of each job's
+source code, and is sufficient to uniquely define any job.  Each
+build request is compared to this database.
 
 
 
-### Inputs to Build
-To build a job three things are required
+### Inputs to the Build Call
+There are three types of input to a job at build time:
 
  - the program source code,
  - references to input data, and
  - input parameters (i.e. options).
 
+All of these are used to check if a job has been built already.
 
 
 ### Building Process
 
-When a job is built, the following happens
+When a job is built, the following happens:
 
   1. A new job directory is created.
   2. Everything needed to execute the job is copied into the job directory.
-  3. New processes starts execution and learns what to do by reading
+  3. New processes are forked that learns what to do by reading
      the information stored in the job directory.
   4. The new job is executing and output is stored in the job
      directory.
   5. When the job completes, additional profiling information is
      stored in the job directory.
 
-For each build, a new job directory is created.  Job directories can
-be separated into different _work directories_, physically separating
-different tasks or users for example.
+Everything related to a job can thus be found in its job directory
+
+On a higher level, job directories can be separated into different
+_work directories_, physically separating different tasks or users for
+example.
+
 
 
 ### Job Dependencies
 A more complicated task can be separated into several jobs.
 References to previous jobs can be used as input parameters to new
-jobs.  This is how to create directed job execution graphs.
+jobs.  Using job references it is possible to build any kind of
+directed job flow graph to solve a complex problem.
 
 
 ### Datasets and Parallel Data Processing
-Jobs could also be data containers.  The possibility to link jobs to
-eachother brings some interesting advantages.  This is discussed in
-more detail in another post.
+Jobs could also be data containers.  The possibility to have jobs
+refering to eachother brings some interesting advantages that are
+discussed in more detail in another post.
 
 
 
 
 ### Why this Build System?
-The way the Accelerator's build system works has several advantages
+The Accelerator's build system is designed for _reproducibility_.  The
+same input to the same program should lead to the same output always.
+Simultanelously, this leads to save a significant amount of execution
+time by re-using old results instead of re-computing them.  If nothing
+has been changed since the last run, old results could be fetched and
+returned immediately.
 
+The way the Accelerator's build system works has several advantages
 
 #### All Information About a Job is Stored Together in a Single Directory
 Having all results, source code, parameters, and profiling information
@@ -82,8 +95,18 @@ set, and input data that was used to generate a particular result.
 
 
 #### Jobs are Only Built if not Built Before
-This saves a lot of time.  Completed jobs can be "re-used", once or very
-frequently, and jobs can even be shared between different users.
+This saves time and energy.  Completed jobs will be _re-used_ if
+possible.  A re-use might never happen, or it may happen very
+frequently.  During the code development phase, for example, re-use
+will happen very frequently and long chains of code can be written
+without any particular penalty in execution time.
+
+This is somewhat similar to "Makefiles", with a main
+difference that all previous "makes" are stored in job directories to
+be fetched immediately when called for.  This is efficient for example
+during the code development phase, since only modified parts will need
+re-execution, and going back and forth between source code versions
+does not consume any human measurable execution time.
 
 
 
@@ -92,27 +115,39 @@ A change in the source code will only affect the current job and the
 jobs depending on it.  Only those parts that are affected by the
 change will be re-executed, which saves time.
 
-#### The build system will ensure that parts affected by a modification will be re-executed
-To say the previous statement it in another way, the build system
-makes sure that parts affected by the change will be re-executed.
 
 
-#### Validation, Does This Output Correspond to this Program/Data/Parameters?
+#### The Build System Ensures that Parts Affected by a Modification will be Re-Executed
+The build system makes sure that parts affected by a change will be
+re-executed.  So assuming the build script has been run after any
+modifications, the output will be up to date with the modification.
 
-A build script can be run at any time to retrieve references to all
-jobs built by it.  Thus, by reading the script and checking the
-referenced job directories, it is clear what input and parameters that
-are in use to create a certain output.
 
-It answers questions like these
+<!-- #### Validation, Does This Output Correspond to this Program/Data/Parameters? -->
+<!-- A build script can be run at any time to retrieve references to all -->
+<!-- jobs built by it.  Thus, by reading the script and checking the -->
+<!-- referenced job directories, it is clear what input and parameters that -->
+<!-- are in use to create a certain output. -->
 
- - **"- Did I run this script before or after the code change?"**  Just run
-    the build script and see what happens.  It if returns immediately
-    it is up to date.  If some jobs are re-executed, there was a
-    modification in the source code that was made after the last run.
+<!-- It answers questions like these -->
+
+<!--  - **"- Did I run this script before or after the code change?"**  Just run -->
+<!--     the build script and see what happens.  It if returns immediately -->
+<!--     it is up to date.  If some jobs are re-executed, there was a -->
+<!--     modification in the source code that was made after the last run. -->
 	
- - **"- Does this output take the latest data into account?"**
-   Again, read and the run the script and see.
+<!--  - **"- Does this output take the latest data into account?"** -->
+<!--    Again, read and the run the script and see. -->
+
+
+### What are the Benefits?
+The main benefits with the build system is that it brings
+_reproducibility_.  Code will only be run if necessary, otherwise
+existing results will be used, which saves execution time.  Since
+changes that could affect a job's output are taken inte account in the
+dependency checking process, jobs _will_ be re-executed if there are
+modifications.  The user can verify and know that the used input data
+and code is really responsible for the current output.
 
 
 ### Conclusion
