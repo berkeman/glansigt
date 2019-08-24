@@ -9,6 +9,8 @@ This post describes the basics of the Accelerator's build system, how
 it works, why it is designed the way it is, and how it can be used to
 _reduce both execution time and probability of making mistakes_.
 
+This is an overview article.  Please see the Accelerator's User's
+Reference for details.
 
 ### Building a Job
 
@@ -54,44 +56,59 @@ When a job is built, the following happens:
   5. When the job completes, additional profiling information is
      stored in the job directory.
 
-Everything related to a job can thus be found in its job directory
+Thus, everything related to a job be found in its job directory.  Jobs
+are transparent and easily observable.
 
-On a higher level, job directories can be separated into different
-_work directories_, physically separating different tasks or users for
-example.
+<!-- #On a higher level, job directories can be separated into different -->
+<!-- #_work directories_, physically separating different tasks or users for -->
+<!-- #example. -->
 
 
 
 ### Job Dependencies
-A more complicated task can be separated into several jobs.
-References to previous jobs can be used as input parameters to new
-jobs.  Using job references it is possible to build any kind of
-directed job flow graph to solve a complex problem.
+A more complicated task is simpler to write, test, and maintain if it
+is separated into several jobs.  Making jobs depend on each other is
+straightforward, since references to successfully completed jobs can
+be input parameters to new jobs.  Using job references it is possible
+to build any kind of directed job flow graph to solve complex
+problems.
+
+<p align="center"><img src="{{ site.url }}/assets/build_jobgraph.svg"> </p>
+
 
 
 ### Datasets and Parallel Data Processing
-Jobs could also be data containers.  The possibility to have jobs
-refering to eachother brings some interesting advantages that are
-discussed in more detail in another post.
+Although it is not the key focus of this post, it should be mentioned
+that jobs could also be data containers.  The Accelerator's _dataset_,
+capable of efficiently storing billions of rows of data with ease, is
+build on top of the jobs paradigm.  Having jobs referencing eachother
+is then used to extend datasets, either with new columns or with new
+rows, with minimal overhead.  But this is the topic of another post,
+and full details are found in the Accelerator's manual.
 
 
 
 
 ### Why this Build System?
 The Accelerator's build system is designed for _reproducibility_.  The
-same input to the same program should lead to the same output always.
-Simultanelously, this leads to save a significant amount of execution
-time by re-using old results instead of re-computing them.  If nothing
-has been changed since the last run, old results could be fetched and
-returned immediately.
+same input to the same program should lead to the same output --
+always.  There is no need to build a job that shares the same inputs
+and source code as an already built job, since the output will be the
+same.  If nothing has been changed since the last run, old results
+could be looked up and returned immediately.  It typically saves a
+significant amount of execution time to re-use old results instead of
+re-computing them.
 
 The way the Accelerator's build system works has several advantages
+
+
 
 #### All Information About a Job is Stored Together in a Single Directory
 Having all results, source code, parameters, and profiling information
 in one place is great for observability and transparency.  Looking
 into a job directory makes it totally clear which program, parameter
 set, and input data that was used to generate a particular result.
+
 
 
 #### Jobs are Only Built if not Built Before
