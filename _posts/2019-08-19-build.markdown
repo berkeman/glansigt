@@ -114,16 +114,12 @@ set, and input data that was used to generate a particular result.
 #### Jobs are Only Built if not Built Before
 This saves time and energy.  Completed jobs will be _re-used_ if
 possible.  A re-use might never happen, or it may happen very
-frequently.  During the code development phase, for example, re-use
-will happen very frequently and long chains of code can be written
-without any particular penalty in execution time.
-
-This is somewhat similar to "Makefiles", with a main
+frequently.  This is somewhat similar to "Makefiles", with the
 difference that all previous "makes" are stored in job directories to
-be fetched immediately when called for.  This is efficient for example
-during the code development phase, since only modified parts will need
-re-execution, and going back and forth between source code versions
-does not consume any human measurable execution time.
+be fetched immediately when called for.  This is beneficial for
+example during the code development phase, since only modified parts
+will need re-execution, and going back and forth between source code
+versions does not consume any human measurable execution time.
 
 
 
@@ -135,9 +131,18 @@ change will be re-executed, which saves time.
 
 
 #### The Build System Ensures that Parts Affected by a Modification will be Re-Executed
-The build system makes sure that parts affected by a change will be
-re-executed.  So assuming the build script has been run after any
-modifications, the output will be up to date with the modification.
+On the other hand, the build system makes sure that parts affected by
+a change will be re-executed.  So assuming the build script has been
+run after any modification, the output will be up to date with the
+modification.
+
+
+#### It is Easy to do Efficient Code Development
+A good design strategy is to designing incrementally, adding one job
+after the other.  This fits perfectly with the build system, since all
+previous jobs prior to the current development point have already been
+built, and results can be fetched at an instant.
+
 
 
 <!-- #### Validation, Does This Output Correspond to this Program/Data/Parameters? -->
