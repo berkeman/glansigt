@@ -20,7 +20,8 @@ Reference for details.
 The _job_ is the atomic unit of program execution on the Accelerator.
 Jobs are powerful, they can execute parallel code, read and store
 large amounts of data very efficiently, and much more.  In fact, the
-job is a topic of its own, and we will not go into details here.
+job is a topic of its own, and we will not go into details here.  See
+references for more information.
 
 The things we need to know about jobs at this point relates to code
 execution.  "Building a job" means executing a piece of code.  When a
@@ -32,9 +33,14 @@ value from a job build operation is a reference to such a directory.
 
 
 #### Job Build is Conditional
-A job is only built if it has not been built before, see figure
+A job is only built if it has not been built before, see figure below.
 
 <p align="center"><img src="{{ site.url }}/assets/build_timeline.svg"> </p>
+
+A job build operation always return a reference to the job.  The
+reference is returned immediately if it already exists.  Otherwise,
+the reference to the new job is returned as soon as it finishes
+execution.
 
 To know if the job has been built before, the Accelerator keeps a
 database containing information on all successfully completed build
@@ -42,10 +48,6 @@ requests.  This information includes a hash digest of each job's
 source code, and is sufficient to uniquely define any job.  Each
 build request is compared to this database.
 
-A job build operation always return a reference to the job.  The
-reference is returned immediately if it already exists.  Otherwise,
-the reference to the new job is returned as soon as it finishes
-execution.
 
 
 
@@ -88,7 +90,21 @@ jobs, making the task easier to write, test, and maintain.  A job
 reference can be used as input parameter to another job, making it
 straightforward to have jobs depend on each other.  Using job
 references it is possible to build any kind of directed job flow graph
-to solve complex problems.
+to solve complex problems, see example below.
+
+<p align="center"><img src="{{ site.url }}/assets/build_jobgraph.svg"> </p>
+
+In code, it may look like this
+```python
+def main(urd):
+    jobid1 = urd.build('method1')
+    jobid2 = urd.build('method2', jobids=dict(pred=jobid1))
+    jobid3 = urd.build('method3', jobids=dict(pred=jobid2))
+    jobid4 = urd.build('method4', jobids=dict(pred=jobid1))
+    jobid5 = urd.build('method5', jobids=dict(pred=jobid1))
+    jobid6 = urd.build('method6', jobids=dict(pred1=jobid4, pred2=jobid5))
+    jobid7 = urd.build('method7', jobids=dict(pred1=jobid3, pred2=jobid6))
+```
 
 The build system is somewhat similar to traditional "Makefiles", with
 the big difference that all previous "makes" are stored in job
@@ -98,14 +114,6 @@ different versions, or input data for that matter, without
 re-executing any code.
 
 
-<p align="center"><img src="{{ site.url }}/assets/build_jobgraph.svg"> </p>
-
-In code, it may look like this
-```python
-def main(urd):
-    jobid1 = urd.build('method1')
-    jobid2 = urd.build('method2', jobids=dict(pred=jobid1))
-```
 
 
 
@@ -168,7 +176,7 @@ again saves time.
 
 The build system guarantees that *parts affected by a modification
 will be re-executed*.  Assuming the build script has been run after a
-modification, the output will be up to date with the modification.
+modification, the output will be **up to date** with the modification.
 There is never any question about which input data and which source
 code that has been used to compute any result.
 
@@ -212,10 +220,12 @@ book-keeping intermediate results.
 
 ### Conclusion
 
-As we've seen, the main benefits with the build system is that it
-brings _reproducibility_ and _transparency_.  This property also leads
-to _reduced execution time_.  We are not likely to mess up
-combinations of input data, source code, and results, since the
-connections are automatic by design.  To this we should add that jobs
-provide efficient parallel processing as well as high speed data
-storage and retrieval capabilities.
+There are several benefits with the Accelerator's build system, of
+which the most important is that it brings _reproducibility_ and
+_transparency_.  This property typically also leads to _reduced
+execution time_.  We are not likely to mess up combinations of input
+data, source code, and results, since the connections are automatic by
+design.  No manual book-keeping is required.  To this we should add
+that jobs provide efficient parallel processing as well as high speed
+data storage and retrieval capabilities, but these are topics for
+other posts.
