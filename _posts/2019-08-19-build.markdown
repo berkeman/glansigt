@@ -35,7 +35,7 @@ value from a job build operation is a reference to such a directory.
 #### Job Build is Conditional
 A job is only built if it has not been built before, see figure below.
 
-<p align="center"><img src="{{ site.url }}/assets/build_timeline.svg"> </p>
+<p align="center"><img src="{{ site.url }}/assets/build_conditional.svg"> </p>
 
 A job build operation always return a reference to the job.  The
 reference is returned immediately if it already exists.  Otherwise,
