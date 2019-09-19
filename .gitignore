@@ -5,3 +5,5 @@ vendor
 Gemfile.lock
 figures/*.bak
 figures/*.svg
+_posts/#*
+_posts/.#*
