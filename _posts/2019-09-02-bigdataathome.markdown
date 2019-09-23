@@ -5,11 +5,10 @@ date:   2019-09-02 00:00:00
 categories: performance
 ---
 
-How to approach the problem of processing large datasets?  Does it
-require expensive hardware?  Is it slow?
-
-In this post we'll show how to do fast and reliable parallel computing
-of large datasets for less than $1000.
+How to approach the problem of processing large datasets.  Does it
+require expensive hardware?  Is it slow?  In this post we'll show how
+to do fast and reliable parallel computing of large datasets for less
+than $1000.
 
 Our approach is Accelerator based.  The Accelerator uses available
 hardware resources efficiently, and many applications will therefore
@@ -24,8 +23,10 @@ The Accelerator is a minimalistic framework with a small footprint
 that runs on anything from 32-bit Raspberry Pies to 64 bit multi core
 rack servers.  One of many features is that it provides simple
 parallel processing that makes good use of modern parallel computer
-hardware.  Since the Accelerator is programmed in Python, it is easy
-to use and get familiar with.
+hardware.  The Accelerator has been used in many projects, including
+being backend for recommendation systems running live to millions of
+customers, since 2012.  The Accelerator is programmed in Python,
+making is easy to use and get familiar with.
 
 
 
@@ -35,29 +36,32 @@ As mentioned, the Accelerator runs on almost any platform.  For many
 data processing and analysis applications, performance scale well with
 the number of CPU cores, so more cores is better.  Plenty of memory is
 also beneficial for disk buffering of intermediate and previous
-results.  Large disks are needed if the datasets are large.
+results.  Large disks are needed to work on large datasets.
 
 We believe that memories with parity control (ECC) and file systems
-with integrity checking and reduncancy (such as zfs) is a requirement
-to fulfill the reproducability requirement.  Any error in the data
-should at least be detected (and preferably corrected).
+with integrity checking and redundancy (such as zfs) is a requirement
+to fulfill reproducibility requirements.  Any error in the data should
+at least be detected (and preferably corrected).
 
 
 
 ### Our Pick:  The Second-Hand Lenovo D20 Workstation from 2011
 
-It is cheap, reliable, and powerful. It actually compares well to
-modern machines, which we will show in _another post_.
+We found this machine on an Internet auction site,  It is cheap,
+reliable, and powerful.  
+It actually compares well to modern machines,
+which we will show in _another post_.
 
 The 2011 Lenovo D20 workstation comes with two CPUs providing in total
 12 cores (24 "threads").  It has 108GB RAM and 2TB solid state disk.
-We found this item on eBay, approx price was **below $1000**.
+We found this item on eBay.  Approximate price for a machine like this is
+**below $1000**.
 
-<p align="center"><img src="{{ site.url }}/assets/ThinkStation D20 014.JPG" height="300"> </p>
+<p align="center"><img src="{{ site.url }}/assets/d20-eol.jpg" height="300"> </p>
 
 If used at full capacity, a machine like this, from 2011, beats the
 most powerful laptop from 2018.  This is mainly because it does not
-need to do aggresive thermal CPU frequency throttling, and it can
+need to do aggressive thermal CPU frequency throttling, and it can
 address memory faster since it has three independent memory channels
 per CPU chip.
 
@@ -133,7 +137,7 @@ closer look at what has happened:
 
 The first thing that happens in the script is that it creates 100
 chained datasets with 10 million rows each.  All this data is fed to
-the `csvexport` method that writes it to a CVS file on disk.
+the `csvexport` method that writes it to a CSV file on disk.
 Exporting the data takes about 11 minutes (687 seconds) at a rate of
 almost 1.5 million rows per second or 115 MB/s
 
@@ -149,8 +153,8 @@ second in parallel!)
 
 Now the imported data is used for calculations.  The script begins
 with adding single columns together.  The test shows the difference in
-speed between different datatypes.  For example, the Acclerator adds
-230 million gaussian floats per second.  The "small integer" dataset
+speed between different datatypes.  For example, the Accelerator adds
+230 million Gaussian floats per second.  The "small integer" dataset
 has less entropy and runs at 317 million rows per second.
 
 There are two main reasons for this high performance.  First, the
