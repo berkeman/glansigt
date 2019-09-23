@@ -5,7 +5,7 @@ date:   2019-09-02 00:00:00
 categories: performance
 ---
 
-How to approach the problem of processing large datasets.  Does it
+How to approach the problem of processing large datasets?  Does it
 require expensive hardware?  Is it slow?  In this post we'll show how
 to do fast and reliable parallel computing of large datasets for less
 than $1000.
