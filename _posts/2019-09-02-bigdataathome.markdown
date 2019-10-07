@@ -1,19 +1,24 @@
 ---
 layout: post
-title:  "Bigdata at Home"
+title:  "Processing Bigdata at Home"
 date:   2019-09-02 00:00:00
 categories: performance
 ---
 
-How to approach the problem of processing large datasets?  Does it
-require expensive hardware?  Is it slow?  In this post we'll show how
-to do fast and reliable parallel computing of large datasets for less
-than $1000.
+Processing large datasets at home is perhaps not for everyone, but it
+is interesting to consider the problem of processing large datasets
+given limited resources such as time and money.  How to approach the
+problem?  What is needed in terms of hardware?  Is it expensive?  Is
+it slow?  In this post we will show how to do fast and reliable
+parallel computing of on a less-than-$1000 machine.  Performance
+results are presented at the end of the post.
 
-Our approach is Accelerator based.  The Accelerator uses available
-hardware resources efficiently, and many applications will therefore
-run well on a standard laptop.  But a more powerful computer will
-reduce execution time and shorten the design iteration time.
+We process data using the Accelerator, a tool released by eBay, that
+has its origins in a startup company running large data driven
+projects with limited resources.  The Accelerator makes efficient use
+of available hardware, and many applications will therefore perform
+well on a standard laptop.  A more powerful computer will execute
+programs faster and shorten design iteration time.
 
 
 
@@ -22,77 +27,97 @@ reduce execution time and shorten the design iteration time.
 The Accelerator is a minimalistic framework with a small footprint
 that runs on anything from 32-bit Raspberry Pies to 64 bit multi core
 rack servers.  One of many features is that it provides simple
-parallel processing that makes good use of modern parallel computer
-hardware.  The Accelerator has been used in many projects, including
-being backend for recommendation systems running live to millions of
-customers, since 2012.  The Accelerator is programmed in Python,
-making is easy to use and get familiar with.
+parallel processing that makes good use of modern multi core computer
+hardware.  The Accelerator is programmed in Python, making is easy to
+use and get familiar with.
+
+The Accelerator has been used in many projects, including being
+back-end for recommendation systems running live to millions of
+customers, since 2012.
+
 
 
 
 ### Hardware for the Accelerator
 
-As mentioned, the Accelerator runs on almost any platform.  For many
-data processing and analysis applications, performance scale well with
-the number of CPU cores, so more cores is better.  Plenty of memory is
-also beneficial for disk buffering of intermediate and previous
-results.  Large disks are needed to work on large datasets.
+What is a good hardware platform for data processing?  As mentioned
+earlier, a laptop may do, but if we are free to choose our computer,
+which parameters are most important?
 
-We believe that memories with parity control (ECC) and file systems
-with integrity checking and redundancy (such as zfs) is a requirement
-to fulfill reproducibility requirements.  Any error in the data should
-at least be detected (and preferably corrected).
+- More cores is better.  Many data processing and analysis
+applications can be parallelised.  Therefore, performance improve with
+the number of available CPU cores.
+
+- Plenty of RAM is beneficial for two main reasons.  First,
+unallocated memory is used for disk buffering of intermediate and
+previous results, which results in a general speedup.  Second, more
+RAM makes it possible to solve larger problems directly in memory, and
+RAM is significantly faster than any disk.
+
+- Large disks are needed to work on large datasets.
+
+We believe that memories with error detection and correction (ECC) and
+file systems with integrity checking and redundancy (such as zfs) are
+necessary to fulfill reproducibility requirements.  If we just want to
+play around with a dataset, this is not the first priority, but as
+soon as we start doing anything more serious, our results depend on
+reproducible computing.  Data is a valuable resource, and any error in
+the data should at least be detected (and preferably corrected).
 
 
 
-### Our Pick:  The Second-Hand Lenovo D20 Workstation from 2011
+### An Example:  Recycling a Lenovo D20 Workstation from 2011
 
-We found this machine on an Internet auction site,  It is cheap,
-reliable, and powerful.  
-It actually compares well to modern machines,
-which we will show in _another post_.
-
-The 2011 Lenovo D20 workstation comes with two CPUs providing in total
-12 cores (24 "threads").  It has 108GB RAM and 2TB solid state disk.
-We found this item on eBay.  Approximate price for a machine like this is
-**below $1000**.
+This machine is cheap, reliable, and powerful, and actually compares
+well to modern machines, which we will show in _another post_.  We
+bought our machine from an Internet auction site in order to try it
+out.
 
 <p align="center"><img src="{{ site.url }}/assets/d20-eol.jpg" height="300"> </p>
 
-If used at full capacity, a machine like this, from 2011, beats the
-most powerful laptop from 2018.  This is mainly because it does not
-need to do aggressive thermal CPU frequency throttling, and it can
-address memory faster since it has three independent memory channels
-per CPU chip.
+The 2011 Lenovo D20 workstation is equipped two CPUs providing in
+total 12 cores (24 "threads"), has 108GB RAM, and 2TB solid state
+disk.  Approximate price for a machine like this is below $1000.
 
-| cpu | 12 cores | X5675 @ xx GHz |
-| ram | ddr3 | 108GB |
-| disk | ssd| 2TB|
+```
+Details:
+  CPU:   12 cores, 2 x X5675@ xXXXX GHz
+  RAM:   DDR3, 108GB
+  DISK:  SSD, 2*960GB
+```
 
-The machine clearly has too little disk for data intensive
-applications, but it is straightforward to have in total eight drives
-in the box.  We have measured the disk controllers to transfer data
-at a sustained rate of 265MB/s to and from the SSDs.
+Despite its age, this machine beats the most powerful laptop
+from 2018.  This is mainly because it has more cores, less problem
+with heat dissipation, and three independent memory channels per CPU
+chip that speeds up memory accessing.
+
+
+Clearly, this machine has too little disk for data heavy applications,
+but there is room and connectors for eight drives in the box.  We have
+measured the disk controllers to transfer data at a sustained rate of
+265MB/s between memory any of the SSDs.
 
 
 
 ### Performance Testing
 
 The Accelerator installation repository comes with a simple
-performance testing script that we've used for the testing.  The
+performance testing script that we have used for the testing.  The
 details can be found on page 3 of [this
-document](https://berkeman.github.io/pdf/acc_install.pdf).  Basically,
-what happens is that the test will create a dataset of one billion
-lines, and this dataset will be read, written, and processed in
-different ways while execution time is measured.
+document](https://berkeman.github.io/pdf/acc_install.pdf), and the
+code is found on
+[github.com/eBay](https://github.com/eBay/accelerator-project_skeleton/tree/master/example_perf).
+The test will create a dataset of **one billion lines**, and is
+composed of several columns with random data of different types.  This
+dataset will be read, written, and processed in different ways while
+execution time is measured.
 
-
-The size of the dataset is 79 GiB (36 GiB compressed).
+The size of the one billion line dataset is 79 GiB (36 GiB compressed).
 
 
 ### Test Results
 
-Here is the complete output from the `example_perf` build script.
+Here is the complete output from the build script.
 
 ```
       operation                       exec time         rows/s
@@ -123,15 +148,20 @@ Here is the complete output from the `example_perf` build script.
 
 6.    find string                        12.304     81,275,676
 
-7.    Total test time                  3235.222
+7.    Total running time               3235.222
+      Total test time                  1112.67
 
 Example size is 1,000,000,000 lines.
 Number of slices is 23.
 ```
 
-In less than one hour (3235 seconds), it reads and writes as well as
-operates on a billion lines of data, several times.  Let us take a
-closer look at what has happened:
+The majority of the execution time is spent in generating the
+synthetic dataset CVS file, while 1113 seconds (less than 20 minutes)
+are used to import the dataset and perform the actual tests.  During
+the tests, the one billion dataset is read and processed in various
+ways several times.  Total testing time, including data generation, is
+less than one hour (3235 seconds).  Let us take a closer look at what
+happens during testing:
 
 #### 1. csvexport
 
@@ -139,56 +169,83 @@ The first thing that happens in the script is that it creates 100
 chained datasets with 10 million rows each.  All this data is fed to
 the `csvexport` method that writes it to a CSV file on disk.
 Exporting the data takes about 11 minutes (687 seconds) at a rate of
-almost 1.5 million rows per second or 115 MB/s
+almost 1.5 million rows per second, or 115 MB/s.  The resulting file
+is XXXXXXXXXXXXXX GB.
 
-#### 2. reimport
+#### 2. import and typing
 
 The CSV file is then imported again using the `csvimport` method,
 followed by typing of the data using `dataset_type`.  Importing runs
 at 1.7 million rows per second while typing runs at 3.1 million rows
-per second.  (The typing jobs both reads and writes about 250MB per
-second in parallel!)
+per second.  (The typing jobs continuously process about 250MB/s.)
+The time spent importing and typing the data is in the coffe-break
+range.  To be specific, it takes **15 minutes (913 seconds).**
 
 #### 3. sum
 
-Now the imported data is used for calculations.  The script begins
-with adding single columns together.  The test shows the difference in
-speed between different datatypes.  For example, the Accelerator adds
-230 million Gaussian floats per second.  The "small integer" dataset
-has less entropy and runs at 317 million rows per second.
+When imported, the dataset is ready for calculations.  The testing
+begins with adding all values in single columns together.  The test
+result highlights the difference in speed between different datatypes.
+For example, **the Accelerator adds 230 million Gaussian distributed
+64-bit floats per second**.  The "small integer" dataset has less
+entropy and runs at 317 million rows per second.  Note, these numbers
+are for a program written in Python operating on data on disk!
 
-There are two main reasons for this high performance.  First, the
-Accelerator only reads the columns needed for the current work, and
-not all the data.  Second, data is compressed on disk, which makes it
-possible to "go beyond the IO bandwidth" between disk and memory.
+There are three main reasons for this high performance.
+
+- First, the Accelerator only reads the columns needed for the current
+work, and not all the data.
+
+- Second, data is compressed on disk, which makes it possible to "go
+beyond the IO bandwidth" between disk and memory. 317 million 64-bit
+floats per second corresponds to a data rate of **2.5GB/s**, which is
+far above the disk to memory transfer rate.
+
+- Third, the Python programs run in parallel on all available cores.
+(Actually, in this example, on 23 of the 24 available CPU "threads".)
 
 #### 4. sum positive
 
 This test adds a data dependency.  Numbers are added only if they are
-positive.
+positive.  These tests are significantly slower, but still they
+consume data at rates between 50-100 million lines per second.
+
 
 #### 5. histogram
 
-This part uses the Python `Counter` class to store distributions of
-each type.  Although it uses a very high-level language construct, it
-runs at more than 20 million rows per second.  We can create a
-histogram of a billion floats in about 45 seconds!
+This part uses the Python
+[Counter](https://docs.python.org/3/library/collections.html) class to
+store distributions of each data column.  Although it uses a very
+high-level language construct, it runs at more than 20 million rows
+per second, **creating a histogram of a billion 64-bit floats in about
+45 seconds!**
 
 #### 6. find string
 
 Here we check for existence of a four character string in a billion
-random strings of length X.  We can do this at a rate exceeding 80
-million rows per second.  (The number of strings found is X out of a
-billion, which is very close to the theoretical result which is Y.)
+random strings of length 10.  We can do this at a rate **exceeding 80
+million rows per second** (i.e. 800MB/s).  (The number of strings
+found is less than one in a million, which is in line with
+theory.)
+
 
 #### 7. Total Test Time
 
-... and we are done in less than one hour.
+Assuming the input data was available on disk in a CSV-like format,
+**importing the data and running all the tests took less than 20
+minutes**, where each test took between 3 and 46 seconds.  Total
+execution time, including generating the one billion line dataset, was
+close to one hour.  On a faster machine, execution times will be even
+lower.
 
 
 
 ### Conclusion
 
 The Accelerator can handle large datasets at high speed on inexpensive
-hardware, and this is one of the reasons it is the ideal framework for
-a lot of data intensive work.
+hardware.  Being able to create a histogram of a billion values in
+less than a minute (45 seconds) is a great advantage in any data
+science application.  (Full disclosure: an import of the complete
+dataset takes 15 minutes, and this has to be carried out first, but
+only once.)  For reasons like this, the Accelerator is an ideal
+framework for a lot of data intensive applications.
