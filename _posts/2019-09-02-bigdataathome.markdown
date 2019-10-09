@@ -81,7 +81,7 @@ disk.  Approximate price for a machine like this is below $1000.
 
 ```
 Details:
-  CPU:   12 cores, 2 x X5675@ xXXXX GHz
+  CPU:   12 cores, 2 x X5675 @ 3.07GHz
   RAM:   DDR3, 108GB
   DISK:  SSD, 2*960GB
 ```
