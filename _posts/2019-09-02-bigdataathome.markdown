@@ -1,17 +1,29 @@
 ---
 layout: post
-title:  "Processing Bigdata at Home"
+title:  "Processing a Billion line Dataset on an Inexpensive Workstation"
 date:   2019-09-02 00:00:00
 categories: performance
 ---
 
-Processing large datasets at home is perhaps not for everyone, but it
-is interesting to consider the problem of processing large datasets
+It is interesting to consider the problem of processing large datasets
 given limited resources such as time and money.  How to approach the
 problem?  What is needed in terms of hardware?  Is it expensive?  Is
 it slow?  In this post we will show how to do fast and reliable
-parallel computing of on a less-than-$1000 machine.  Performance
-results are presented at the end of the post.
+parallel computing of on a less-than-$1000 machine.
+
+We will show that, using simple examples with correspondingly simple
+Python programs, it is possible to work in an agile way with datasets
+exceeding one billion lines.  Two examples
+
+  1. String matching.  Our simple example can process a 100 billion
+     (100.000.000.000) line dataset in about 20 minutes!  All in
+     Python, using a program that is ony thirteen non-blank lines, on
+     a $1000 computer.
+
+  2. Creating histograms of Gaussian distributed 64-bit floats runs at
+     more than 20 million lines per second.  We can process a billion
+     line dataset in 45 seconds!
+
 
 We process data using the Accelerator, a tool released by eBay, that
 has its origins in a startup company running large data driven
