@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Processing a Billion line Dataset on an Inexpensive Workstation"
+title:  "Processing a Billion Row Dataset on an Inexpensive Workstation"
 date:   2019-09-02 00:00:00
 categories: performance
 ---
@@ -13,11 +13,11 @@ parallel computing of on a less-than-$1000 machine.
 
 We will show that, using simple examples with correspondingly simple
 Python programs, it is possible to work in an agile way with datasets
-exceeding one billion lines.  Two examples
+exceeding one billion lines.  Two examples (details will follow):
 
   1. String matching.  Our simple example can process a 100 billion
      (100.000.000.000) line dataset in about 20 minutes!  All in
-     Python, using a program that is ony thirteen non-blank lines, on
+     Python, using a program that is only thirteen non-blank lines, on
      a $1000 computer.
 
   2. Creating histograms of Gaussian distributed 64-bit floats runs at
@@ -93,21 +93,22 @@ disk.  Approximate price for a machine like this is below $1000.
 
 ```
 Details:
-  CPU:   12 cores, 2 x X5675 @ 3.07GHz
+  CPU:   12 cores, 2 x Intel Xeon X5675 @ 3.07GHz
   RAM:   DDR3, 108GB
   DISK:  SSD, 2*960GB
 ```
 
-Despite its age, this machine beats the most powerful laptop
-from 2018.  This is mainly because it has more cores, less problem
-with heat dissipation, and three independent memory channels per CPU
-chip that speeds up memory accessing.
+Despite its age, this machine outperforms modern laptops, mainly
+because it has more cores, less problem with heat dissipation, and
+three independent memory channels per CPU chip that speeds up memory
+accessing.
 
-
-Clearly, this machine has too little disk for data heavy applications,
-but there is room and connectors for eight drives in the box.  We have
-measured the disk controllers to transfer data at a sustained rate of
-265MB/s between memory any of the SSDs.
+Clearly, this machine, in its current configuration, has too little
+disk for data heavy applications, but there is room and connectors for
+eight drives in the box.  We have measured the disk controllers to
+transfer data at a sustained rate of 265MB/s between memory any of the
+SSDs.  (Using more SSDs in zfs raidz configuration, we have measured
+continuous writes exceeding 1.2GB/s.)
 
 
 
@@ -168,21 +169,23 @@ Number of slices is 23.
 ```
 
 The majority of the execution time is spent in generating the
-synthetic dataset CVS file, while 1113 seconds (less than 20 minutes)
-are used to import the dataset and perform the actual tests.  During
-the tests, the one billion dataset is read and processed in various
-ways several times.  Total testing time, including data generation, is
-less than one hour (3235 seconds).  Let us take a closer look at what
-happens during testing:
+synthetic dataset CVS file that is later used for testing, while 1113
+seconds (less than 20 minutes) are used to import the dataset and
+perform the actual tests.  During the tests, the one billion dataset
+is read and processed in various ways multiple times.  Total execution
+time, including data generation, is less than one hour (3235 seconds).
+Let us take a closer look at what happens during testing:
+
 
 #### 1. csvexport
 
 The first thing that happens in the script is that it creates 100
 chained datasets with 10 million rows each.  All this data is fed to
-the `csvexport` method that writes it to a CSV file on disk.
-Exporting the data takes about 11 minutes (687 seconds) at a rate of
-almost 1.5 million rows per second, or 115 MB/s.  The resulting file
-is XXXXXXXXXXXXXX GB.
+the `csvexport` method that writes it to a compressed CSV file on
+disk.  Generating this file takes about 11 minutes (687 seconds), and
+runs at a data rate of almost 1.5 million rows per second, or 115
+MB/s.  The resulting output is a 36GiB compressed CSV file.
+
 
 #### 2. import and typing
 
@@ -190,8 +193,10 @@ The CSV file is then imported again using the `csvimport` method,
 followed by typing of the data using `dataset_type`.  Importing runs
 at 1.7 million rows per second while typing runs at 3.1 million rows
 per second.  (The typing jobs continuously process about 250MB/s.)
-The time spent importing and typing the data is in the coffe-break
-range.  To be specific, it takes **15 minutes (913 seconds).**
+The time spent importing and typing the data corresponds approximately
+to a coffee-break.  To be specific, it takes **15 minutes (913
+seconds)** to import and type the complete dataset.
+
 
 #### 3. sum
 
@@ -200,21 +205,27 @@ begins with adding all values in single columns together.  The test
 result highlights the difference in speed between different datatypes.
 For example, **the Accelerator adds 230 million Gaussian distributed
 64-bit floats per second**.  The "small integer" dataset has less
-entropy and runs at 317 million rows per second.  Note, these numbers
-are for a program written in Python operating on data on disk!
+entropy and therefore runs slightly faster, 317 million rows per
+second.  Note, these numbers are for a program written in Python
+operating on data on disk!
 
-There are three main reasons for this high performance.
+There are four main reasons for this high performance.
 
-- First, the Accelerator only reads the columns needed for the current
-work, and not all the data.
+- The Accelerator only reads the columns needed for the current work,
+and not all the data.
 
-- Second, data is compressed on disk, which makes it possible to "go
-beyond the IO bandwidth" between disk and memory. 317 million 64-bit
-floats per second corresponds to a data rate of **2.5GB/s**, which is
-far above the disk to memory transfer rate.
+- Data is compressed on disk, which makes it possible to "go beyond
+the IO bandwidth" between disk and memory. 317 million 64-bit floats
+per second corresponds to a data rate of **2.5GB/s**, which is far
+above the disk to memory transfer rate.
 
-- Third, the Python programs run in parallel on all available cores.
+- The Python programs run in parallel on all available CPU cores.
 (Actually, in this example, on 23 of the 24 available CPU "threads".)
+
+- Data is streamed continuously, rather than accessed randomly, from
+  disk to CPU cores.  Such a deterministic access pattern takes
+  advantage of cache prefetching and minimises seek times.
+
 
 #### 4. sum positive
 
@@ -232,13 +243,13 @@ high-level language construct, it runs at more than 20 million rows
 per second, **creating a histogram of a billion 64-bit floats in about
 45 seconds!**
 
+
 #### 6. find string
 
-Here we check for existence of a four character string in a billion
-random strings of length 10.  We can do this at a rate **exceeding 80
-million rows per second** (i.e. 800MB/s).  (The number of strings
-found is less than one in a million, which is in line with
-theory.)
+Check for existence of a four character string in a billion random
+strings of length 10.  This runs at a rate **exceeding 80 million rows
+per second** (i.e. 800MB/s).  (The number of strings found is less
+than one in a million, which is in line with theory.)
 
 
 #### 7. Total Test Time
