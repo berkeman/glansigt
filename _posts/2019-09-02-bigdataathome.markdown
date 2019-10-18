@@ -81,7 +81,7 @@ the data should at least be detected (and preferably corrected).
 ### An Example:  Recycling a Lenovo D20 Workstation from 2011
 
 This machine is cheap, reliable, and powerful, and actually compares
-well to modern machines, which we will show in _another post_.  We
+well to modern machines, which we will show in a future post.  We
 bought our machine from an Internet auction site in order to try it
 out.
 
@@ -101,7 +101,7 @@ Details:
 Despite its age, this machine outperforms modern laptops, mainly
 because it has more cores, less problem with heat dissipation, and
 three independent memory channels per CPU chip that speeds up memory
-accessing.
+accesses.
 
 Clearly, this machine, in its current configuration, has too little
 disk for data heavy applications, but there is room and connectors for
@@ -179,8 +179,8 @@ Let us take a closer look at what happens during testing:
 
 #### 1. csvexport
 
-The first thing that happens in the script is that it creates 100
-chained datasets with 10 million rows each.  All this data is fed to
+The script starts by creating a one-billion line dataset in the
+Accelerator's internal dataset format.  All this data is then fed to
 the `csvexport` method that writes it to a compressed CSV file on
 disk.  Generating this file takes about 11 minutes (687 seconds), and
 runs at a data rate of almost 1.5 million rows per second, or 115
