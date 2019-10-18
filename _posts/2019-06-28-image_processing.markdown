@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Parallel Image Processing using the Accelerator Part 1:  The Basics"
+title:  "Parallel Image Processing using the Accelerator:  The Basics"
 date:   2019-06-28 00:00:00
 categories: processing
 ---
@@ -27,11 +27,10 @@ network inference, will be discussed in an upcoming post.
 
 ### Parallel Image Processing Example
 
-A simple "easy to understand" example is that of creating image
-
-thumbnails (i.e. downscaled copies) of a large set of (larger) images.
-The figure below depicts conversion from a 4k video frame down to a
-size that is more reasonable for a neural network to operate on
+A simple example is that of creating image thumbnails (i.e. downscaled
+copies) of a large set of (larger) images.  The figure below depicts
+conversion from a 4k video frame down to a size that is more
+reasonable for a neural network to operate on
 
 <p align="center"><img src="{{ site.url }}/assets/image_rescale.svg"> </p>
 
@@ -42,7 +41,7 @@ the computer, which may be significantly higher.
 
 We will approach the example from two directions,
 
-1. by keeping things simple and write a minimal parallel program to solve the task, and
+1. by keeping things simple and writing a minimal parallel program to solve the task, and
 2. by using more Accelerator features to create a solution that is
    more flexible and extendable.
 
@@ -74,11 +73,12 @@ from PIL import Image
 options=dict(files=[], size=(100, 100))
 
 def analysis(sliceno, params):
-    files = options.files[sliceno::params.slices]    # work on a slice of all filenames
+    # work on a single slice of all filenames
+    files = options.files[sliceno::params.slices]
     for fn in files:
         im = Image.open(fn)
         im.thumbnail(options.size)
-        im.save(fn + '.thumbnail', "JPEG")
+        im.save(fn + '.thumbnail', 'JPEG')
 ```
 
 The function `analysis()` will be forked and executed in
@@ -404,13 +404,3 @@ can be added with just a few lines of code.
 The Accelerator brings deterministic processing and re-use of jobs in
 order to minimise confusion and processing time, which is a big
 advantage when processing for example large sets of image files.
-
-
-
-
-### Additional Resources
-
-[The Accelerator's Homepage (exax.org)](https://exax.org)  
-[The Accelerator on Github/eBay](https://github.com/ebay/accelerator)  
-[Installation Manual with Performance Test](https://berkeman.github.io/pdf/acc_install.pdf)  
-[Reference Manual](https://berkeman.github.io/pdf/acc_manual.pdf)  
