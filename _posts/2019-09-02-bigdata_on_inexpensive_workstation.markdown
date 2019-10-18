@@ -86,6 +86,7 @@ bought our machine from an Internet auction site in order to try it
 out.
 
 <p align="center"><img src="{{ site.url }}/assets/d20-eol.jpg" height="300"> </p>
+<p align="right"> (Image from lenovo.com) </p>
 
 The 2011 Lenovo D20 workstation is equipped two CPUs providing in
 total 12 cores (24 "threads"), has 108GB RAM, and 2TB solid state
