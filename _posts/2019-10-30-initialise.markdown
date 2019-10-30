@@ -8,7 +8,7 @@ categories: example
 
 This HOWTO shows how to install and test the Accelerator.
 
-#### TD;DR
+#### TL;DR
 ```sh
 # install
 pip install accelerator
@@ -78,7 +78,7 @@ file and one new directory
 accelerator.conf  dev/
 ```
 
-Project source files will go into the `dev` directory, and we'll talk
+Project source files will go into the `dev/` directory, and we'll talk
 more about that later.
 
 The file `accelerator.conf` contains the project's configuration.
@@ -117,9 +117,11 @@ users.  In this case a singe workdir `dev` is defined that is located
 in the directory `${HOME}/accelerator/workdirs/dev`.  (The `${HOME}`
 is a reference to the shell environment variable `HOME`.  Absolute
 paths are of course also fine.)  The `target workdir` is not
-mandatory, but good practice to avoid surprises.
+mandatory, but it is good practice to use it to avoid surprises.
 
-Then follows the definition of packages:
+Then follows the definition of which [packages](https://docs.python.org/3/tutorial/modules.html#packages)
+that should be accessible in the project:
+
 ```text
 method packages:
         dev
@@ -127,32 +129,29 @@ method packages:
         accelerator.test_methods
 ```
 
+Three packages are defined here, first the `dev` package (which
+corresponds to our recently created `myproject/dev` directory), and
+then two packages from the Accelerator installation:
+`standard_methods` and `test_methods`.
 
-
+Finally, this section:
+```text
 result directory: ${HOME}/accelerator/results
 source directory: # /some/path where you want import methods to look.
 logfile: ${HOME}/accelerator/daemon.log
 ```
-						
+
+specifies two directories and a log file.  Unless these are used
+explicitly, it is only the log file that will matter here.
 
 
-The `dev` directory is a _python package_ where project source files
-should be located.
 
-explain files/dirs
+#### The dev package
 
-edit config, define workdirs etc, berätta om att tests finns
-
-
-```shell
-ax daemon
-```
-
-
-```shell
-ax run tests
-```
-
+Let's go back to the `dev/` directory.  This is where the project's
+source files are to be stored.  The directory is actually a Python
+package (that can be `import`ed), and thus it contains an `__init__.py`
+file.  Here is a complete list of the files:
 
 ```text
 dev/
@@ -162,4 +161,74 @@ dev/
     methods.conf
 ```
 
-sluta med eget exempel
+The directory contains one example method `a_example.py` and one
+example build script `automata.py`.  It also contains the mandatory
+`methods.conf` file which specifies which of all methods in the
+package that should be executable.  The file contains the single line
+
+```text
+example
+```
+
+indicating that `a_example.py` is indeed executable in the current
+project.
+
+
+
+### Testing the Installation
+
+If we are happy with the workdir definition of the configuration file
+we can proceed and run the built in tests.  If not, this is the time
+to edit `accelerator.conf`.
+
+The Accelerator is based on a "client-server" architecture.  
+Make sure the virtual environment is active, and do
+
+```shell
+ax daemon
+```
+
+This starts the server.  It is highly recommended to keep the server
+running in a separate terminal, so when issuing commands to it, we do
+that from a new terminal.
+
+So, create a new terminal (gnu screen or tmux is suggested), initiate
+the virtual environment and `cd` to the project's directory:
+```shell
+source accvenv/bin/activate
+cd myproject
+```
+
+Now we can run the built in tests, like this:
+
+```shell
+ax run tests
+```
+
+This will run `automata.tests` which the Accelerator searches for (in
+alphabetical order) in all packages specified in the configuration
+file.  In this case it is located in the `example_tests` package.
+
+The `tests` script will try a number of corner cases relating to for
+example character encoding, and it will break if there is insufficient
+support of _locales_ installed on the system.  In particular, if you
+get
+
+```text
+Exception: Failed to enable numeric_comma, please install at least one
+of the following locales: da_DK nb_NO nn_NO sv_SE fi_FI en_ZA es_ES
+es_MX fr_FR ru_RU de_DE nl_NL it_IT
+```
+
+this is perfectly fine.  On a Debian-based system, locales can be
+configured using
+
+```sh
+dpkg-reconfigure locales
+```
+
+Why like this?  Well, the Accelerator is designed to handle in
+practice any character encoding scheme, and in order to guarantee it,
+it has to be tested.  If the test fails, well, this indicated that the
+system might not support all cases that the Accelerator is designed to
+handle.
