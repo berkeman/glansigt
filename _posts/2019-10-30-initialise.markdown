@@ -232,3 +232,21 @@ dpkg-reconfigure locales
 character encoding scheme, and in order to guarantee it, it has to be
 tested.  If the test fails, well, this indicates that the system might
 not support all cases that the Accelerator is designed to handle.
+
+
+### Install from the git Repository
+
+It is also possible to install directly from the git repository.
+
+Clone the repository
+```sh
+git clone https://github.com/eBay/accelerator
+```
+and install
+```sh
+cd accelerator
+./setup.py build
+./setup.py install
+```
+
+On a Debian-based system, the dependencies are @@@@@@@@@@@@@@@@@@@@@@@@@
