@@ -96,7 +96,7 @@ we'll walk through the file and comment the things that matters in
 this project right now._
 
 First, the number of _slices_ is specified.  This number stipulates
-how many processes the Accelerator will run in parallell.  The
+how many processes the Accelerator will run in parallel.  The
 variable is initiated to the number of available CPU cores minus one:
 
 ```text
@@ -208,6 +208,7 @@ ax run tests
 This will run `automata.tests` which the Accelerator searches for (in
 alphabetical order) in all packages specified in the configuration
 file.  In this case it is located in the `example_tests` package.
+**This might fail**, please read on!
 
 The `tests` script will try a number of corner cases relating to for
 example character encoding, and it will break if there is insufficient
@@ -227,8 +228,7 @@ configured using
 dpkg-reconfigure locales
 ```
 
-Why like this?  Well, the Accelerator is designed to handle in
-practice any character encoding scheme, and in order to guarantee it,
-it has to be tested.  If the test fails, well, this indicated that the
-system might not support all cases that the Accelerator is designed to
-handle.
+-Why?  Well, the Accelerator is designed to handle in practice any
+character encoding scheme, and in order to guarantee it, it has to be
+tested.  If the test fails, well, this indicates that the system might
+not support all cases that the Accelerator is designed to handle.
