@@ -8,7 +8,7 @@ categories: example
 
 This HOWTO shows how to install and test the Accelerator.
 
-#### TL;DR
+#### [TL;DR](https://en.wikipedia.org/wiki/Wikipedia:Too_long;_didn%27t_read)
 ```sh
 # install
 pip install accelerator
