@@ -1,0 +1,246 @@
+---
+layout: post
+title:  "A Look at the NYC Yellow Cab Dataset"
+date:   2020-01-02 00:00:00
+categories: example
+---
+
+<p align="center"><img src="{{ site.url }}/assets/nyc_heatmap.png" height="600"> </p>
+
+### Introduction
+
+### The Dataset
+
+For the file "yellow_tripdata_2016-06.csv" columns and min/max values looks like this
+```
+Columns:
+    dropoff_datetime       datetime  [1996-06-20 16:23:24, 2016-07-01 23:55:31]
+    dropoff_latitude       float32   [     0.000000,     60.040714]
+    dropoff_longitude      float32   [-118.18625641,  106.24687958]
+    fare_amount            float32   [   -450.00000,  628544.75000]
+    improvement_surcharge  float32   [ -0.300000012,  11.640000343]
+    mta_tax                float32   [ -2.700000048,  60.349998474]
+    passenger_count        int32     [            0,             9]
+    payment_type           unicode
+    pickup_datetime        datetime  [2016-06-01 00:00:00, 2016-06-30 23:59:59]
+    pickup_latitude        float32   [     0.000000,     64.096481]
+    pickup_longitude       float32   [-118.18625641,    0.00000000]
+    rate_code              int32     [            1,            99]
+    store_and_fwd_flag     unicode
+    surcharge              float32   [ -41.22999954,  597.91998291]
+    tip_amount             float32   [ -67.69999695,  854.84997559]
+    tolls_amount           float32   [ -12.50000000,  970.00000000]
+    total_amount           float32   [   -450.79999,  629033.75000]
+    trip_distance          float32   [     0.000000,  71732.703125]
+    vendor_id              unicode
+```
+
+
+### Locational Data
+Here is a heatmap of cab starting positions around central Manhattan.
+The most common starting position is either side of the Penn Station.
+
+<p float="center">
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+</p>
+<p float="center">
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+</p>
+<p float="center">
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+</p>
+
+
+
+
+
+
+### Number of Cabs over Time
+
+Each line in the dataset covers a complete trip.  It has both starting
+and ending timestamps.  If we want to compute a graph of the number of
+ongoing trips per time we can proceed as follows
+
+1. The time resolution in the dataset is one second.  It is sufficient
+to compute number of trips per minute.  There are about four million
+seconds in the dataset, which is a reasonable amount of data to handle
+without difficulty.
+
+2.  Create a vector of all zeros with a length four million
+
+3.  For each trip, increase the vector at the start time offset,
+    and decrease it by one at the stop time offset
+
+4.  Integrate the vector to get the number of ongoing trips per minute
+
+
+The output data is about four million values, or more than 1000 values
+per pixel on a high resolution monitor, so it does not make sense to
+show a plot of all the data here.  It is interesting to zoom in on the
+data at various interesting points using for example gnuplot.  Here is
+one such zoom-in, covering December 2015 and January 2016.
+
+ <p align="center"><img src="{{ site.url
+}}/assets/nyc_rides_201512-201601.png" height="400"> </p>
+
+The is a drop in the number of simultaneous taxi rides over Christmas,
+but what is the drop down to zero that we see in late January?  We zoom in:
+
+<p float="center">
+   <img src="{{ site.url }}/assets/nyc_rides_snowzilla.png" height="350"/>
+   <img src="{{ site.url }}/assets/nyc_wikipedia_snowzilla.jpg" height="350"/>
+</p>
+
+Some googling reveals that this is the [January 2016 United States
+Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
+where a travel ban was instituted for New York City.
+
+### The Upside Down
+
+
+
+
+
+### Try it out Yourself!
+
+#### Download the dataset
+#### Install the Accelerator
+#### Import the dataset
+#### Run the examples
+
+
+### Dataset Problems
+
+#### Column names
+
+Each data file has a header with column names for all columns in the
+file.  Unfortunately, *both names and formatting change between files*.
+Some headers use space+comma as the field separator, while some use
+just comma.  All data is comma separated, though.  In addition, in
+some files there is an empty line between the header and the data.
+
+The solution to these problems is composed of two parts.  First, we
+write a function that reads the first lines in the datafile to
+determine the labels and how many blank lines there are before the
+actual data.  Second, we create a simple dictionary that maps all
+label names to a canonical set of names that is used throughout the
+dataset.
+
+
+#### Bad lines
+
+Two of the files in the dataset contain a total of 6809 "unparseable"
+lines.  The files are
+
+```
+yellow_tripdata_2010-02.csv      # 1126 bad lines
+yellow_tripdata_2010-03.csv      # 5683 bad lines
+```
+
+All these lines share the property that they contain one more column
+than all other lines.
+
+The Accelerator finds and isolates these lines automatically.  This is
+the way it works.  On a first data import, the import program will
+crash, since parsing is by default assumed to be strict.  Thus, the
+programmer is informed there is a problem.  The next step is to re-run
+the import at the position of the crash with the `allow_bad` flag set.
+When the `allow_bad` flag is set, all unparseable lines are stored in
+a separate dataset named `bad`, one for each input file, and after the
+full import completes we can check the contents of these datasets.
+The simplest way to examine these dataset is using the `dsinfo` tool,
+that actually comes with an option to show only those datasets that
+contain one line or more of data.  So we run
+```
+% ax dsinfo nyc-179/bad -C
+```
+and get
+```
+    ...
+    Full chain length 90, from nyc-0/bad to nyc-178/bad
+    Filtered chain length 2
+          0: nyc-26/bad (1,126)
+          1: nyc-28/bad (5,683)
+    6,809 total lines in chain
+```
+
+By doing `dsinfo` lookups on the two datasets, we see that they
+correspond to the files mentioned above.  Since the datasets are
+small, we can investigate them further will simple shell commands, for
+example like this
+
+```
+% ax dsgrep . nyc-26/bad data | awk -F, '{print NF}' | uniq
+```
+
+The command above will grep anything (a dot regexp) in the `data`
+column of the `nyc-26/bad` dataset, and paste it to an `awk` program
+that will print the number of fields separated by a comma.  This data
+is then fed to `uniq` that will print unique lines only once.  The
+output of the above program is
+
+```
+19
+```
+
+while
+
+```
+% ax dsinfo nyc-26/default
+```
+
+tells us that there are 18 columns in the dataset:
+```
+    Filename: /zbd/data/nyctaxi2019/yellow_tripdata_2010-02.csv
+    ...
+    18 columns
+    ...
+```
+The same goes for the dataset `nyc-28/bad`.
+
+
+
+#### Outliers
+
+
+For the complete dataset, min/max values look like this
+
+```
+% ax dsinfo nyc-179
+
+Columns:                                 min value       max value
+       dropoff_datetime       datetime  [1900-01-01 00:00:00, 2253-08-23 07:56:38]
+       dropoff_latitude       float32   [-3579.1394043,  3577.1350098]
+       dropoff_longitude      float32   [-3579.1394043,  3460.4267578]
+       fare_amount            float32   [-21474808.000,    825998.625]
+       improvement_surcharge  float32   [  -0.30000001,  137.63000488]
+       mta_tax                float32   [   -3.0000000,  1311.2199707]
+       passenger_count        int32     [            0,           255]
+       payment_type           unicode   
+       pickup_datetime        datetime  [2009-01-01 00:00:00, 2016-06-30 23:59:59]
+       pickup_latitude        float32   [-3579.1394043,  3577.1354980]
+       pickup_longitude       float32   [-3509.0151367,  3570.2241211]
+       rate_code              int32     [            0,           252]
+       store_and_fwd_flag     unicode   
+       surcharge              float32   [ -79.00000000,  999.98999023]
+       tip_amount             float32   [-1677720.1250,  3950588.7500]
+       tolls_amount           float32   [-21474836.000,      5510.070]
+       total_amount           float32   [-21474830.000,   3950611.500]
+       trip_distance          float32   [ -40840124.00,  198623008.00]
+       vendor_id              unicode   
+```
+
+Clearly, most min and max values does not make any sense: 255
+passengers?  3460 degrees (i.e. ten turns around the earth)?
+$3950611.5 for a taxi ride?  One of the columns seems to be perfectly
+fine, though, and that is the `pickup_datetime` column.  Its range is
+exactly as expected.  A bit strange.
+
+A deeper analysis is needed to understand this, of course depending on
+the application.  As we've seen there are also correlations between
+"vendors" and specific data problems, so not all problems are general
+problems.
+
