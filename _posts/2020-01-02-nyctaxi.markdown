@@ -90,9 +90,9 @@ Plotting with a minute resolution is far to noisy to be useful when
 looking at this scale.  In fact, there are thousands of samples for
 each pixel on screen.  So we downsample.  Actually, we do downsampling
 in two steps.  First, all data is added into bins, where each bin
-representing one calendar day.  From there, a 30 day raised cosine
-filter is applied to smooth the curve into a month-like timescale.
-The resulting curve is shown below:
+representing one calendar day.  From there, a 30 day root raised
+cosine filter is applied to smooth the curve into a month-like
+timescale.  The resulting curve is shown below:
 
 <p align="center"><img src="{{ site.url }}/assets/nyc_rides_yearly.png" height="200"> </p>
 
@@ -106,8 +106,8 @@ during Christmas, and the peak is somewhere around April.
 In order to make sense of a plot with minute resolution, we have to
 zoom in.  This is preferably done interactively with some plotting
 tool.  Since the datafile is about 94MB, one has to choose this
-program with care.  We use gnuplot, and it handles this file pretty
-well.
+program with care.  We use [gnuplot](http://www.gnuplot.info/), and it
+handles this file pretty well.
 
 Here is one interesting zoom-in, covering December 2015 and January
 2016:
@@ -129,6 +129,24 @@ We zoom in:
 Some googling reveals that what we see is the [January 2016 United
 States Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
 where a travel ban was instituted for New York City.  (Image from Wikipedia.)
+
+
+#### Comments
+
+Data relating to human activities typically experience periodicity on
+year, week, and day levels.  There is a lot of interesting things to
+note if playing with the minute resolution file.
+
+According to wikipedia, there are about 15000 "medallions" for New
+York City.  Clearly, from the graph above, we can se that it happens
+that more than 8000 cabs are in duty at the same time!
+
+Gnuplot has been around and in constant development since 1986.
+
+
+
+
+
 
 ### The Upside Down
 
