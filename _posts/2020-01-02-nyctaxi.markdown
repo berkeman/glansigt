@@ -37,8 +37,10 @@ Columns:
 
 
 ### Locational Data
+
 Here is a heatmap of cab starting positions around central Manhattan.
-The most common starting position is either side of the Penn Station.
+The most common starting positions are the the the Penn Station exits
+on 7th and 8th Avenue.
 
 <p float="center">
    <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
@@ -76,15 +78,19 @@ without difficulty.
 
 4.  Integrate the vector to get the number of ongoing trips per minute
 
+#### Per day
 
+TODO
+
+
+#### Per Minute
 The output data is about four million values, or more than 1000 values
 per pixel on a high resolution monitor, so it does not make sense to
 show a plot of all the data here.  It is interesting to zoom in on the
 data at various interesting points using for example gnuplot.  Here is
 one such zoom-in, covering December 2015 and January 2016.
 
- <p align="center"><img src="{{ site.url
-}}/assets/nyc_rides_201512-201601.png" height="400"> </p>
+ <p align="center"><img src="{{ site.url }}/assets/nyc_rides_201512-201601.png" height="350"> </p>
 
 The is a drop in the number of simultaneous taxi rides over Christmas,
 but what is the drop down to zero that we see in late January?  We zoom in:
@@ -94,8 +100,8 @@ but what is the drop down to zero that we see in late January?  We zoom in:
    <img src="{{ site.url }}/assets/nyc_wikipedia_snowzilla.jpg" height="350"/>
 </p>
 
-Some googling reveals that this is the [January 2016 United States
-Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
+Some googling reveals that what we see is the [January 2016 United
+States Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
 where a travel ban was instituted for New York City.
 
 ### The Upside Down
