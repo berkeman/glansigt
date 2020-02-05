@@ -35,25 +35,42 @@ Columns:
     vendor_id              unicode
 ```
 
+An initial question was if the data is different depending on the
+`vendor_id` column.  This column has the following distribution
+```
+  vendor        #rows
+       1    102008367
+       2    113511124
+     CMT    505603754
+     DDS     14169148
+     VTS    513853077
+```
+
 
 ### Locational Data
 
-Here is a heatmap of cab starting positions around central Manhattan.
-The most common starting positions are the the the Penn Station exits
-on 7th and 8th Avenue.
+Here are heatmaps of cab dropoff positions around central Manhattan.
+The most common positions are the the the Penn Station exits on 7th
+and 8th Avenue.  Dropoff positions are more distributed over the area,
+we'll have a quick look at that later.  We plot one heatmap for each
+`vendor_id`.
 
 <p float="center">
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_1_D.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_2_D.png" height="400"/>
 </p>
 <p float="center">
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_CMT_D.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_DDS_D.png" height="400"/>
 </p>
 <p float="center">
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
-   <img src="{{ site.url }}/assets/nyc_heatmap.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_VTS_D.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_VTS_D.png" height="400"/>
 </p>
+
+Here it is obvious that some "vendors" provide data with better
+quality than others.
+
 
 
 
