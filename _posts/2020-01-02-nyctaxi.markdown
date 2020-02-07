@@ -65,12 +65,20 @@ we'll have a quick look at that later.  We plot one heatmap for each
 </p>
 <p float="center">
    <img src="{{ site.url }}/assets/coord_VTS_D.png" height="400"/>
-   <img src="{{ site.url }}/assets/coord_VTS_D.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_VTSflip_D.png" height="400"/>
 </p>
 
-Here it is obvious that some "vendors" provide data with better
-quality than others.
+Before jumping to conclusions, we note that the plots cover _all_ data
+for each vendor, and the most noisy graphs corresponds to the vendors
+with most data.  However, limiting each graph to only 100.000.000
+points, the trend is similar.  We have not investigated this further.
 
+The bottom right image is interesting.  This shows data from the "VTS"
+vendor plotted at the position on the _South Pole_ that corresponds to
+the location of Empire State Building with its latitude and longitude
+coordinates swapped!  Some equipment out there has been travelling
+with its coordinates mixed up.  Interesting!  There are probably more
+issues like this, see section on data quality below.
 
 
 
