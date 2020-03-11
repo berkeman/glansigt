@@ -1,17 +1,39 @@
 ---
 layout: post
-title:  "A Look at the NYC Yellow Cab Dataset"
+title:  "Fast Processing of the NYC Yellow Cab Dataset"
 date:   2020-01-02 00:00:00
 categories: example
 ---
 
 <p align="center"><img src="{{ site.url }}/assets/nyc_heatmap.png" height="600"> </p>
 
-### Introduction
 
-### The Dataset
 
-For the file "yellow_tripdata_2016-06.csv" columns and min/max values looks like this
+
+# Introduction
+
+The Accelerator from eBay is the perfect tool for processing of large
+datasets on a single machine.  In this post, we look at the relatively
+large open NYC Taxi dataset (available from the [Taxi & Limousine
+Commission](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)),
+and show how to efficiently process it to compute some numbers,
+graphs, heatmaps, and animations.
+
+
+
+
+# The Dataset
+
+The dataset is a collection of taxi trips.  There is one file per
+month, and one taxi trip per line.  Each line contains information
+such as pickup and dropoff position and time, payments, and more.  In
+total, there are 1.2 billion (1,190,645,813) lines with taxi trips
+with GPS pickup and dropoff coordinates.  The size of the dataset is
+about 240GB uncompressed.
+
+To get a first feel for it, here are the column names and min/max
+values for one of the files, `yellow_tripdata_2016-06.csv`:
+
 ```
 Columns:
     dropoff_datetime       datetime  [1996-06-20 16:23:24, 2016-07-01 23:55:31]
@@ -35,25 +57,56 @@ Columns:
     vendor_id              unicode
 ```
 
-An initial question was if the data is different depending on the
-`vendor_id` column.  This column has the following distribution
+If we look closely, we can see that there are indeed some strange
+values that need further investigation.  In general, datasets
+typically comes with a number of issues, of which some are documented,
+and some not.  The NYC dataset is of high quality, and we'll have a
+look at some of the issues we've found later in this post.
+
+
+
+
+# A First Analysis: Creating Heatmaps of Pickup/Dropoff Locations
+
+Using the `pickup` and `dropoff` location data columns, it is
+straightforward to plot a heatmap over New York City.  We can start by
+generating one heatmap of all the data, but to make it much more
+interesting we create a set of plots to look at.  First, to see the
+difference between pickup and dropoff locations, we plot these
+separately.  Then, we are curious about the `vendor_id` column, and if
+data is different for different vendors.  Here is the distribution of
+values in the `vendor_id` column:
+
 ```
   vendor        #rows
-       1    102008367
-       2    113511124
-     CMT    505603754
-     DDS     14169148
-     VTS    513853077
+       1    102.008.367
+       2    113.511.124
+     CMT    505.603.754
+     DDS     14.169.148
+     VTS    513.853.077
 ```
 
+Data from different vendors is also separated in time, but we've
+chosen not to include that analysis for brewity reasons.
 
-### Locational Data
+### The Heatmaps
 
-Here are heatmaps of cab dropoff positions around central Manhattan.
-The most common positions are the the the Penn Station exits on 7th
-and 8th Avenue.  Dropoff positions are more distributed over the area,
-we'll have a quick look at that later.  We plot one heatmap for each
-`vendor_id`.
+First, let's have a look at the difference between /pickup/ and
+/dropoff/ locations.  Below we show these for vendor "1":
+
+<p float="center">
+   <img src="{{ site.url }}/assets/coord_1_P.png" height="400"/>
+   <img src="{{ site.url }}/assets/coord_2_D.png" height="400"/>
+</p>
+
+There is more "detail" in the dropoff data.  A hypothesis is that
+dropoff locations corresponds to where the customer wants to go,
+whereas the pickup locations corresponds to where it is easiest to get
+a cab.
+
+Below are heatmaps of cab **dropoff** positions around central
+Manhattan, one plot per vendor.  The most common dropoff locations are
+the the Penn Station exits on 7th and 8th Avenue.
 
 <p float="center">
    <img src="{{ site.url }}/assets/coord_1_D.png" height="400"/>
@@ -71,21 +124,26 @@ we'll have a quick look at that later.  We plot one heatmap for each
 Before jumping to conclusions, we note that the plots cover _all_ data
 for each vendor, and the most noisy graphs corresponds to the vendors
 with most data.  However, limiting each graph to only 100.000.000
-points, the trend is similar.  We have not investigated this further.
+points, the results are similar.  Some vendor data is better than
+other.  Remember that vendors also were distributed in time, so one
+hypothesis is that this is partly because of technology
+improvements.  We have not investigated this further.
 
-The bottom right image is interesting.  This shows data from the "VTS"
-vendor plotted at the position on the _South Pole_ that corresponds to
-the location of Empire State Building with its latitude and longitude
-coordinates swapped!  Some equipment out there has been travelling
-with its coordinates mixed up.  Interesting!  There are probably more
-issues like this, see section on data quality below.
+In either case, not everything that appears to be noise is actually
+noise.  Have a look at the bottom right image.  This heatmap shows
+data from the "VTS" vendor plotted at the position on the _South Pole_
+that corresponds to the location of Empire State Building if its
+latitude and longitude coordinates were swapped!  Some equipment out
+there has been travelling with its coordinates mixed up.  Interesting!
+There are probably more issues like this, see section on data quality
+below.
 
 
 
 
 
 
-### Number of Ongoing Taxi Rides per Time Instance
+### A Second Analysis:  Number of Ongoing Taxi Rides per Time Instance
 
 Each row in the dataset corresponds to a complete trip.  A row has
 both starting and ending timestamps.  The time resolution is one
@@ -147,13 +205,15 @@ in late January?  Were there no cabs on duty at that time?
 We zoom in:
 
 <p float="center">
-   <img src="{{ site.url }}/assets/nyc_rides_snowzilla.png" height="350"/>
-   <img src="{{ site.url }}/assets/nyc_wikipedia_snowzilla.jpg" height="350"/>
+   <img src="{{ site.url }}/assets/nyc_rides_snowzilla.png" height="340"/>
+   <img src="{{ site.url }}/assets/nyc_wikipedia_snowzilla.jpg" height="340"/>
 </p>
 
-Some googling reveals that what we see is the [January 2016 United
-States Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
-where a travel ban was instituted for New York City.  (Image from Wikipedia.)
+A search on the Internet reveals that the dip corresponds in time with
+the [January 2016 United States
+Blizzard](https://en.wikipedia.org/wiki/January_2016_United_States_blizzard),
+where a travel ban was instituted for New York City.  (Image from
+Wikipedia.)
 
 
 #### Comments
@@ -173,21 +233,125 @@ Gnuplot has been around and in constant development since 1986.
 
 
 
-### The Upside Down
+### A Third Analysis:  Making an Animation
+
+Animations are sometimes a great way to visualise datasets.  In this
+case, we create a video from frames calculated as heatmaps of pickup
+and dropoff locations on a map.  We use red-ish colours for pickups
+(think, red as in urgent to get a cab), and blue-ish for dropoffs.
+
+We make sure that generation of the frames is carried out entirely in
+parallel in order to minimise execution time.  The vintage /machine/
+we are using extracts heatmap data at a rate of about 5000 heatmaps
+per second.  Drawing the heatmaps using /pillow/ is significantly
+slower, though.  But will full parallelisation, the machine can draw
+about 125 frames per second.  At 60Hz framerate, this is twice
+realtime.  Then, /ffpmeg/ needs about the same time to encode the
+frames to h.264 video format.
+
+In this /post/, we explain in more detail how the animation was
+created and how to do simple and efficient parallel processing using
+the Accelerator.
 
 
 
 
 
-### Try it out Yourself!
+### Now, Try it out Yourself!
+
+#### Install the Accelerator
+The Accelerator is installed using `pip`
+```
+pip install accelerator
+```
+
+To run the scripts, you also need to install the *Python Imaging
+Library* (a.k.a. *PIL* or *pillow*) and *gnuplot*.  Install pillow for
+example using `pip install pillow`.  In a debian-like distribution,
+gnuplot can be installed using `apt-get install gnuplot`.
+
+
+
+#### Clone the Project
+
+The project is available on *github*.  Do
+
+```
+git clone http://github.com/berkeman/nyc
+```
+
+followed by
+
+```
+cd nyc
+```
+
+Everything should be set up, but please have a look at the
+`accelerator.conf` configuration file.  Adjust the `slices` parameter
+to match the number of cores in the machine.  If you want to store
+data and jobs elsewhere, please modify the definition of the `dev`
+workdir and the `input directory`.
+
+
 
 #### Download the dataset
-#### Install the Accelerator
-#### Import the dataset
-#### Run the examples
+
+The dataset is available from the [TLC Trip Record
+Data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
+page.  The files we've used are the `Yellow Taxi Trip Records` ones.
+For now, download this one
+
+[https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv](https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv)
+
+for example like this
+```bash
+cd input_directory
+wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv
+```
 
 
-### Dataset Problems
+#### Start the Accelerator Server
+
+The Accelerator is a client-server application.  Start the server by issuing
+
+```bash
+ax server
+```
+
+in the `nyc` project directory.  (Use `ax server --help` for more information.)
+
+
+
+#### Run the Build Script
+
+For simplicity, there is a single build script that will import and
+process a single datafile.  The script is
+`nyc/build_simple_verbose.py` and it is executed like this
+
+```bash
+ax run simple_verbose
+```
+
+Execute this command in the `nyc` directory with the server running.
+
+This build script will import, type, and process the input file.  It
+will create a few heatmaps and graphs, as well as a movie file.
+Output files will be stored in the `result` directory.
+
+
+(There is a corresponding `build_simple` doing the same operations, but
+without all the printouts.)
+
+
+
+
+
+### Dataset Issues
+
+
+All datasets comes with issues of various kinds.  This dataset is of
+high quality, but there are some things...
+
 
 #### Column names
 
