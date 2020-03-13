@@ -235,6 +235,10 @@ Gnuplot has been around and in constant development since 1986.
 
 ### A Third Analysis:  Making an Animation
 
+<p align="center">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/SaUyRZPwFYg" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</p>
+
 Animations are sometimes a great way to visualise datasets.  In this
 case, we create a video from frames calculated as heatmaps of pickup
 and dropoff locations on a map.  We use red-ish colours for pickups
