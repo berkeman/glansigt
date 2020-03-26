@@ -274,23 +274,28 @@ Gnuplot has been around and in constant development since 1986.
 </p>
 
 Animations are sometimes a great way to visualise datasets.  In this
-case, we create a video from frames calculated as heatmaps of pickup
-and dropoff locations on a map.  We use red-ish colours for pickups
-(think red as in urgent to get a cab), and blue-ish for dropoffs.
+case, we create a video from still frames, where each frame is a
+heatmap of pickup and dropoff locations on a map.  We use red-ish
+colours for pickups (think red as in urgent to get a cab), and
+blue-ish for dropoffs.
 
 Creating all these heatmaps consumes a lot of CPU cycles.  To minimise
 execution time, we make sure that generation of the frames is carried
-out entirely in parallel.  The vintage /machine/ we are using extracts
-heatmap data at a rate of about 5000 heatmaps per second.  Drawing the
-heatmaps using /pillow/ is significantly slower, though.  But will
-full parallelisation, the machine can draw about 125 frames per
-second.  At 60Hz framerate, this is twice playback realtime.  Then,
-/ffpmeg/ needs about the same time to encode the frames to h.264 video
-format.
+out entirely in parallel.  The vintage
+[machine](https://expertmakeraccelerator.org/performance/2019/09/02/bigdata_on_inexpensive_workstation.html)
+we are using extracts heatmap data at a rate of about 5000 heatmaps
+per second.  Drawing the heatmaps using
+[pillow](https://python-pillow.org) is significantly slower, though.
+But will full parallelisation, the machine can draw about 125 frames
+per second.  At 60Hz framerate, this is twice playback realtime.
+Then, [ffpmeg](https://www.ffmpeg.org/) needs about the same time to
+encode the frames to h.264 video format.
 
 **In this /post/, we explain in more detail how the animation was
 created and how to do simple and efficient parallel processing using
 the Accelerator.**
+
+
 
 
 
@@ -308,10 +313,14 @@ The Accelerator is installed using `pip`
 pip install accelerator
 ```
 
-To run the scripts, you also need to install the *Python Imaging
-Library* (a.k.a. *PIL* or *pillow*) and *gnuplot*.  Install pillow for
-example using `pip install pillow`.  In a debian-like distribution,
-gnuplot can be installed using `apt-get install gnuplot`.
+### Dependencies
+
+To run the scripts that generate _graphics and video_, you also need to
+install the [Python Imaging Library](https://python-pillow.org)
+(a.k.a. *PIL* or *pillow*), [gnuplot](http://www.gnuplot.info/), and
+[ffmpeg](https://www.ffmpeg.org/).  Install pillow for example using
+`pip install pillow`.  In a debian-like distribution, gnuplot and
+ffmpeg can be installed using `apt-get install gnuplot ffmpeg`.
 
 
 
@@ -351,6 +360,10 @@ for example like this
 cd input_directory
 wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv
 ```
+
+Note that the data must be stored in the `input directory` as defined
+by the configuration file.
+
 
 
 ## Start the Accelerator Server
