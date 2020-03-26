@@ -404,25 +404,30 @@ without all the printouts.)
 
 # Dataset Issues
 
+The NYC Taxi dataset is of high quality.  But all datasets comes with
+issues of various kinds.  A good thing with this dataset is that there
+is an _errata_ with known problems and additional information.
 
-All datasets comes with issues of various kinds.  This dataset is of
-high quality, but there are some things...
+In this chapter, we present a few things that impact the _import_ of
+the dataset.
+
 
 
 ## Column Names
 
-Each data file has a header with column names for all columns in the
-file.  Unfortunately, *both names and formatting change between files*.
-Some headers use space+comma as the field separator, while some use
-just comma.  All data is comma separated, though.  In addition, in
-some files there is an empty line between the header and the data.
+Each data file starts with a header containing column names for all
+columns in the file.  Unfortunately, *both names and formatting change
+between files*.  Some headers use space+comma as the field separator,
+while some use just comma.  In addition, for some, but not all, files,
+there is an additional empty line between the header and the data.
 
 The solution to these problems is composed of two parts.  First, we
 write a function that reads the first lines in the datafile to
-determine the labels and how many blank lines there are before the
-actual data.  Second, we create a simple dictionary that maps all
-label names to a canonical set of names that is used throughout the
-dataset.
+determine the column names and the number of blank lines present
+before the actual data.  Second, we create a simple dictionary that
+maps all label names to a canonical set of names that is used for all
+files throughout the dataset.
+
 
 
 ## Bad Lines
@@ -439,20 +444,24 @@ All these lines share the property that they contain one more column
 than all other lines.
 
 The Accelerator finds and isolates these lines automatically.  This is
-the way it works.  On a first data import, the import program will
-crash, since parsing is by default assumed to be strict.  Thus, the
-programmer is informed there is a problem.  The next step is to re-run
-the import at the position of the crash with the `allow_bad` flag set.
-When the `allow_bad` flag is set, all unparseable lines are stored in
-a separate dataset named `bad`, one for each input file, and after the
-full import completes we can check the contents of these datasets.
-The simplest way to examine these dataset is using the `dsinfo` tool,
-that actually comes with an option to show only those datasets that
-contain one line or more of data.  So we run
+the way it works: On a first data import, the import program will
+crash with an error, since parsing is by default assumed to be
+_strict_.  Thus, the programmer is informed there is a problem.  The
+next step is to re-run the import for the file causing the crash with
+the `allow_bad` flag set.  When the `allow_bad` flag is set, all
+unparseable lines are stored in a separate dataset named `bad`, one
+for each imported file, and when the import of all files is complete
+we can check the contents of these datasets.  The simplest way to
+examine these dataset is using the `dsinfo` tool, that actually comes
+with an option to show only those datasets that contain one line or
+more of data.  So we run
+
 ```
 % ax dsinfo nyc-179/bad -C
 ```
+
 and get
+
 ```
     ...
     Full chain length 90, from nyc-0/bad to nyc-178/bad
@@ -464,8 +473,8 @@ and get
 
 By doing `dsinfo` lookups on the two datasets, we see that they
 correspond to the files mentioned above.  Since the datasets are
-small, we can investigate them further will simple shell commands, for
-example like this
+small, we can investigate them further using the 'dsgrep' tool and
+some simple shell commands, for example like this
 
 ```
 % ax dsgrep . nyc-26/bad data | awk -F, '{print NF}' | uniq
@@ -488,18 +497,20 @@ while
 ```
 
 tells us that there are 18 columns in the dataset:
+
 ```
     Filename: /zbd/data/nyctaxi2019/yellow_tripdata_2010-02.csv
     ...
     18 columns
     ...
 ```
-The same goes for the dataset `nyc-28/bad`.
+
+The same goes for the dataset `nyc-28/bad`.  Thus, these lines caused
+the import to fail because they had an unexpected extra column.
 
 
 
 ## Outliers
-
 
 For the complete dataset, min/max values look like this
 
@@ -536,6 +547,12 @@ exactly as expected.  A bit strange.
 
 A deeper analysis is needed to understand this, of course depending on
 the application.  As we've seen there are also correlations between
-"vendors" and specific data problems, so not all problems are general
-problems.
+"vendors" and specific data problems, so not all problems we see are
+general.
 
+
+
+# Execution Times
+
+
+# Conclusion
