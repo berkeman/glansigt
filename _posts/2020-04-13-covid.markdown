@@ -1,0 +1,83 @@
+---
+layout: post
+title:  "Fast Parsing of the Kaggle CORD-19 Dataset"
+date:   2020-04-13 00:00:00
+categories: example
+---
+
+
+
+# Introduction
+
+In the famous "COVID-19 Open Research Dataset Challenge (CORD-19)" on
+[Kaggle](https://www.kaggle.com/allen-institute-for-ai/CORD-19-research-challenge),
+the challenge is to extract information from a dataset composed of a
+large number of scientific papers.  While the Natural Language
+Processing (NLP) part of this project is the main focus of the Kaggle
+challenge, this post covers the important pre-processing of the
+dataset.
+
+The complete source code is available on
+[github](https://github.com/berkeman/CORD-19-parser).
+
+
+
+# Pre-Processing
+
+The Kaggle dataset is composed of JSON-files, one file per paper.  In
+total there are more than 50.000 files spread over several
+directories.  The pre-processing proposed her converts all these files
+into one Comma Separated Values (CSV) file.  (Actually, the separator
+could be any character.)  Various NLP-preprocessing tricks such as
+conversion to lowercase and tokenisation can also be carried out in
+the process.
+
+Why does this matter?  Mainly because
+
+ - reading a single CSV file is faster than reading 50.000 JSON-files
+   from different directories.
+
+ - the resulting CSV file, and thus all further processing, becomes
+   independent of the input data format, that may change.
+
+ - tokenisation, conversion to lowercase etc. is carried out once and
+   separated from all further processing, which is faster.
+
+ - a CSV-file can be manipulated by standard shell tools such as
+   `grep` for visualisation and validation tasks.
+
+A single file is also easier to share.
+
+In addition, we want the pre-processing to be fully reproducible and
+transparent.  It should be possible to run on several different
+versions of the dataset and algorithms without difficulty.
+
+
+
+# The Code
+
+The source code is available
+[here](https://github.com/berkeman/CORD-19-parser).  It is using the
+Accelerator data processor from eBay for parallel and reproducible
+computing.
+
+It is all very simple.  There is only one custom method,
+`dev/a_import.py`, which reads all JSON files in parallel, parses
+them, and writes them to a common dataset.  The method is called once
+for every directory containing JSON files, and all resulting datasets
+are chained.  Finally, the bundled `csvexport` method is used to
+convert the resulting dataset chain into a CSV-like file.  This method
+has options for selection of separator, citations, and more.
+
+
+
+# About the Accelerator
+
+The Accelerator from eBay is designed for fast processing of large
+datasets on a single machine.  Programs are simply written in Python,
+and thanks to its fast parallel processing and clever reuse of
+pre-computed results, execution times are typically in the range of a
+few seconds per task.  Therefore, ideas could be tried out with very
+little overhead, making the Accelerator a perfect tool for fast
+exploration of large datasets.
+
