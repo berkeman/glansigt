@@ -7,9 +7,12 @@ categories: example
 
 
 
+<p align="center"> --- Convert 50.000 JSON files to a single CSV file in less than a minute! ---</p>
+
+
 # Introduction
 
-In the famous "COVID-19 Open Research Dataset Challenge (CORD-19)" on
+In the popular "COVID-19 Open Research Dataset Challenge (CORD-19)" on
 [Kaggle](https://www.kaggle.com/allen-institute-for-ai/CORD-19-research-challenge),
 the challenge is to extract information from a dataset composed of a
 large number of scientific papers.  While the Natural Language
@@ -18,7 +21,7 @@ challenge, this post covers the important pre-processing of the
 dataset.
 
 The complete source code is available on
-[github](https://github.com/berkeman/CORD-19-parser).
+[github](https://github.com/exaxorg/CORD-19-parser).
 
 
 
@@ -57,7 +60,7 @@ versions of the dataset and algorithms without difficulty.
 # The Code
 
 The source code is available
-[here](https://github.com/berkeman/CORD-19-parser).  It is using the
+[here](https://github.com/exaxorg/CORD-19-parser).  It is using the
 Accelerator data processor from eBay for parallel and reproducible
 computing.
 
@@ -68,6 +71,18 @@ for every directory containing JSON files, and all resulting datasets
 are chained.  Finally, the bundled `csvexport` method is used to
 convert the resulting dataset chain into a CSV-like file.  This method
 has options for selection of separator, citations, and more.
+
+
+
+# Example Execution time
+
+On a 2018 high-performance laptop (HP Elitebook 840 G5), the complete
+processing takes **52 seconds**.
+
+(A [2009 Lenovo
+workstation](https://expertmakeraccelerator.org/performance/2019/09/02/bigdata_on_inexpensive_workstation.html)
+does the same job in **15 seconds**, more than three times faster
+and at half the price of the laptop!)
 
 
 
