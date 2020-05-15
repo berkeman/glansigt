@@ -6,42 +6,53 @@ categories: example
 ---
 
 <p align="center"><img src="{{ site.url }}/assets/floff.png" height="800"> </p>
-
+<p align="center">Heatmap of taxi pickup/dropoff locations.  Can you spot the three airports?</p>
 
 
 
 # Introduction
 
-The Accelerator from eBay is designed for fast processing of large
-datasets on a single machine.  Programs are simply written in Python,
-and thanks to its fast parallel processing and clever reuse of
-pre-computed results, execution times are typically in the range of a
-few seconds per task.  Therefore, ideas could be tried out with very
-little overhead, making the Accelerator a perfect tool for fast
-exploration of large datasets.
-
 In this post, we look at the relatively large open NYC Taxi dataset
 (available from the [Taxi & Limousine
 Commission](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)),
-and show some numbers, graphs, heatmaps, as well as an animation, that
-was created using the Accelerator.
+and show some numbers, graphs, heatmaps, as well as animations (on
+youtube [here](https://youtu.be/T7e4kUkXtc8) and
+[here](https://youtu.be/8r3EKwJ-_jE)), that was created using the
+Accelerator.
 
-Everything we show is **reproducible**, and one section of this post is
-dedicated to how to setup and run the analyses we present on **your own
-computer**.
+Everything we show is **reproducible**, and one section of this post
+is dedicated to how to setup and run the analyses we present on **your
+own computer**.  The script we provide generates plots and a movie in
+just **95 seconds** on a modern laptop (and much faster on a
+stationary computer).
+
+The Accelerator from eBay is designed for fast processing of large
+datasets on a single machine.  Programs are written in Python, and
+thanks to the Accelerator's fast parallel processing and clever reuse
+of pre-computed results, execution times are typically in the range of
+a few seconds per task.  Therefore, ideas could be tried out with very
+little overhead, making the Accelerator a perfect tool for fast
+exploration of large datasets.
+
+
+
+<p align="center">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/T7e4kUkXtc8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</p>
+
+
 
 
 
 
 # The Dataset
 
-The dataset is a collection of taxi trips.  There is one file per
-month, and each file is in a tabular format.  Each line corresponds to
-one taxi trip, and contains information about pickup and dropoff
-locations and times, payments, and some more related data.  In total,
-there are 1.2 billion (1,190,645,813) lines with taxi trips with GPS
-pickup and dropoff coordinates.  The size of the dataset is about
-240GB uncompressed.
+The dataset is a collection of taxi trips.  It is provided as one
+CSV-file per month.  Each line corresponds to one taxi trip, and
+contains information about pickup and dropoff locations and times,
+payments, and some more related data.  In total, there are 1.2 billion
+(1,190,645,813) lines with taxi trips with GPS pickup and dropoff
+coordinates.  The size of the dataset is about 240GB uncompressed.
 
 The following table is part of output from the Accelerator's `dsinfo`
 command, and shows column names and min/max values for one of the
@@ -83,9 +94,9 @@ look at some of the issues we've found later in this post.
 
 Using the `pickup` and `dropoff` location data columns, it is
 straightforward to plot a heatmap over New York City.  A single
-heatmap mixes a lot of information together, so instead we make it
-much more interesting by creating a set of plots to examine.  This is
-easily done using the Accelerator's powerful build scripts.
+heatmap mixes a lot of information together, so instead we separate
+some variables by creating a small set of plots.  This is easy to do
+using the Accelerator's powerful build scripts.
 
 First, to see the difference between pickup and dropoff locations, we
 plot these separately.  Then, we are curious about the `vendor_id`
@@ -119,7 +130,7 @@ _dropoff_ locations.  Below we show these for vendor "1":
 
 There is more "detail" in the dropoff data.  A hypothesis is that
 dropoff locations correspond to where the customer wants to go, which
-could be anywhere, whereas the pickup locations correspond to where
+could be "anywhere", whereas the pickup locations correspond to where
 it is easiest to catch a cab.
 
 Below are heatmaps of cab **dropoff** positions around central
@@ -145,31 +156,31 @@ _all_ data for each vendor, and the most noisy graphs corresponds to
 the vendors with most data.  However, limiting each graph to only
 100.000.000 points, the results are similar.  _Some vendors have
 higher quality positional data than others_.  **Remember that vendors
-also were distributed in time, so one hypothesis is that this is
-partly because of technology improvements.  We have not investigated
-this further.**
+also were distributed in time**, so one hypothesis is that this is
+partly because of technology improvements.  We are not walking down
+that path in this post.
 
-Some of the plots seem noisy, but actually, it turns out that some of
+Indeed, the plots look noisy, but actually, it turns out that some of
 the noise is not noise at all.  Take a look at the bottom right image
 above.  This heatmap shows data from the "VTS" vendor centered around
 the position on the _South Pole_ that corresponds to the location of
 Empire State Building _if its latitude and longitude coordinates were
-swapped!_  Some equipment out there has been travelling with its
-coordinates mixed up.  Interesting!  There are probably more issues
-like this, see section on data quality below.
+swapped!_ Some equipment out there has been travelling with its
+coordinates mixed up.  Interesting!  We've seen indications on more
+issues like this, see section on data quality below.
 
 
 
 
 # A Second Analysis:  Ongoing Taxi Rides
 
-It would be interesting to know the number of cabs is traffic at each
-instance in time.  This information is not explicit in the dataset,
-but it can be computed easily.  Here is how:
+It would be interesting to know the number of cabs in traffic at each
+point in time.  **This information is not explicit in the dataset,
+but it can be computed easily**.  Here is how:
 
 First, we realise that the resolution of the timestamp data in the
 dataset is one second.  There is no need to carry out our analysis
-with such a high resolution, it will only lead to more computations
+with such a high resolution, it will only lead to lots of computations
 and a noisy result.  It is more than sufficient to work on a minute
 resolution.  There are about _four million minutes_ in the dataset
 (2009-01-01 to 2016-06-30), which is a reasonable amount of data to
@@ -182,11 +193,12 @@ number of cabs in traffic each minute we can do as follows
 1.  Create a vector of all zeros with a length of four million
     entries.  Each item will correspond to one minute.
 
-2.  For each ride, increase the vector item at the start time offset by one,
-    and decrease the vector item at the stop time offset by one.
+2.  For each ride,
+     - increase the vector item corresponding to the start time by one, and
+     - decrease the vector item corresponding to the stop time by one.
 
-3.  Integrate, i.e. sum the vector to get the number of ongoing trips
-    per minute.
+3.  Integrate, i.e. cumulatively sum the vector to get the number of
+    ongoing trips per minute.
 
 These operations execute fast in linear time, and they do not consume
 a lot of memory.
@@ -200,11 +212,8 @@ Let's look at the resulting curves.
 First, we look at all the data from 2009 to 2016 in one go.  Plotting
 with a minute resolution on this scale is far to noisy to be useful.
 In fact, there are thousands of samples for each pixel rendered on the
-screen.  So we downsample.  Actually, we do downsampling in two steps.
-First, all data is added into bins, where each bin representing one
-calendar day.  From there, a 30 day root raised cosine filter is
-applied to smooth the curve into a month-like timescale.  The
-resulting curve is shown below:
+screen.  So we downsample to one pixel per day.  The resulting curve
+is shown below:
 
 <p align="center"><img src="{{ site.url }}/assets/nyc_rides_yearly.png" height="200"> </p>
 
@@ -219,8 +228,9 @@ Christmas, and the peak is somewhere around April.
 In order to make sense of a plot with minute resolution, we have to
 zoom in.  This is preferably done interactively with some plotting
 tool.  Since the datafile is about 94MB, one has to choose this
-program with care.  We use [gnuplot](http://www.gnuplot.info/), and it
-handles this file pretty well.
+program with care (or split the file into parts).  We use
+[gnuplot](http://www.gnuplot.info/), and it handles files of this size
+pretty well.
 
 Here is one interesting zoom-in, covering December 2015 to January
 2016:
@@ -249,18 +259,17 @@ Wikipedia.)
 
 ## Comments
 
-This was just a brief sample.  There are a lot of interesting things
-that can be found if playing with this minute resolution file!
+- It is interesting to pan and zoom around in the ongoing-cab-data.  What
+we've shown is just one example.  The file has a resolution of one
+minute, and data for several years!
 
-Data relating to human activities typically experience periodicity on
+- Data relating to human activities typically experience periodicity on
 year, week, and day levels.
 
-What about the total number of taxis in New York?  Clearly, from the
-graph above, we can se that it happens that more than 8000 cabs are in
+- How many taxis are there in New York?  Clearly, from the graph
+above, we can se that there are times when more than 8000 cabs are in
 duty at the same time!  According to Wikipedia, there are about 15.000
 "medallions" for New York City.
-
-Gnuplot has been around and in constant development since 1986.
 
 
 
@@ -270,13 +279,13 @@ Gnuplot has been around and in constant development since 1986.
 # A Third Analysis:  Making an Animation
 
 <p align="center">
-<iframe width="560" height="315" src="https://www.youtube.com/embed/SaUyRZPwFYg" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8r3EKwJ-_jE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </p>
 
-Animations are sometimes a great way to visualise datasets.  In this
-case, we create a video from still frames, where each frame is a
-heatmap of pickup and dropoff locations on a map.  We use red-ish
-colours for pickups (think red as in urgent to get a cab), and
+Animations are sometimes a great way to visualise datasets.  Here,
+we've create a video from still frames, where each frame is a heatmap
+of pickup and dropoff locations on a map at one point in time.  We use
+red-ish colours for pickups (think red as in urgent to get a cab), and
 blue-ish for dropoffs.
 
 Creating all these heatmaps consumes a lot of CPU cycles.  To minimise
@@ -287,15 +296,9 @@ we are using extracts heatmap data at a rate of about 5000 heatmaps
 per second.  Drawing the heatmaps using
 [pillow](https://python-pillow.org) is significantly slower, though.
 But will full parallelisation, the machine can draw about 125 frames
-per second.  At 60Hz framerate, this is twice playback realtime.
+per second.  At 60Hz framerate, this is **twice playback realtime**.
 Then, [ffpmeg](https://www.ffmpeg.org/) needs about the same time to
 encode the frames to h.264 video format.
-
-**In this /post/, we explain in more detail how the animation was
-created and how to do simple and efficient parallel processing using
-the Accelerator.**
-
-
 
 
 
@@ -304,101 +307,11 @@ the Accelerator.**
 # Try it out Yourself!
 
 Everything we've shown in this post is easily reproducible in a few
-minutes processing time.  This section tells you how.
+minutes processing time, even on a laptop!
 
+Code and instructions are available on this project at github
 
-## Install the Accelerator
-The Accelerator is installed using `pip`
-```
-pip install accelerator
-```
-
-### Dependencies
-
-To run the scripts that generate _graphics and video_, you also need to
-install the [Python Imaging Library](https://python-pillow.org)
-(a.k.a. *PIL* or *pillow*), [gnuplot](http://www.gnuplot.info/), and
-[ffmpeg](https://www.ffmpeg.org/).  Install pillow for example using
-`pip install pillow`.  In a debian-like distribution, gnuplot and
-ffmpeg can be installed using `apt-get install gnuplot ffmpeg`.
-
-
-
-## Clone the Project
-
-The project is available on *github*.  Do
-
-```
-git clone http://github.com/berkeman/nyc
-```
-
-followed by
-
-```
-cd nyc
-```
-
-Everything should be set up, but please have a look at the
-`accelerator.conf` configuration file.  Adjust the `slices` parameter
-to match the number of cores in the machine.  If you want to store
-data and jobs elsewhere, please modify the definition of the `dev`
-workdir and the `input directory`.
-
-
-
-## Download the Dataset
-
-The dataset is available from the [TLC Trip Record
-Data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
-page.  The files we've used are the `Yellow Taxi Trip Records` ones.
-For now, download this one
-
-[https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv](https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv)
-
-for example like this
-```bash
-cd input_directory
-wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2016-01.csv
-```
-
-Note that the data must be stored in the `input directory` as defined
-by the configuration file.
-
-
-
-## Start the Accelerator Server
-
-The Accelerator is a client-server application.  Start the server by issuing
-
-```bash
-ax server
-```
-
-in the `nyc` project directory.  (Use `ax server --help` for more information.)
-
-
-
-## Run the Build Script
-
-For simplicity, there is a single build script that will import and
-process a single datafile.  The script is
-`nyc/build_simple_verbose.py` and it is executed like this
-
-```bash
-ax run simple_verbose
-```
-
-Execute this command in the `nyc` directory with the server running.
-
-This build script will import, type, and process the input file.  It
-will create a few heatmaps and graphs, as well as a movie file.
-Output files will be stored in the `result` directory.
-
-
-(There is a corresponding `build_simple` doing the same operations, but
-without all the printouts.)
-
-
+[https://github.com/exaxorg/NYC-cab-analysis-and-movie](https://github.com/exaxorg/NYC-cab-analysis-and-movie)
 
 
 
@@ -444,17 +357,21 @@ All these lines share the property that they contain one more column
 than all other lines.
 
 The Accelerator finds and isolates these lines automatically.  This is
-the way it works: On a first data import, the import program will
-crash with an error, since parsing is by default assumed to be
-_strict_.  Thus, the programmer is informed there is a problem.  The
-next step is to re-run the import for the file causing the crash with
-the `allow_bad` flag set.  When the `allow_bad` flag is set, all
+the way it works:
+
+- On a first data import, the import program will crash with an error,
+since parsing is by default assumed to be _strict_.  Thus, the
+programmer is informed there is a problem.
+
+- The next step is to re-run the import for the file causing the crash
+with the `allow_bad` flag set.  When the `allow_bad` flag is set, all
 unparseable lines are stored in a separate dataset named `bad`, one
-for each imported file, and when the import of all files is complete
-we can check the contents of these datasets.  The simplest way to
-examine these dataset is using the `dsinfo` tool, that actually comes
-with an option to show only those datasets that contain one line or
-more of data.  So we run
+for each imported file, and importing proceeds without error.
+
+When the import of all files is complete we can check the contents of
+these datasets.  The simplest way to examine these dataset is using
+the `dsinfo` tool, that actually comes with an option to show only
+those datasets that contain one line or more of data.  So we run
 
 ```
 % ax dsinfo nyc-179/bad -C
@@ -543,16 +460,23 @@ Clearly, most min and max values does not make any sense: 255
 passengers?  3460 degrees (i.e. ten turns around the earth)?
 $3950611.5 for a taxi ride?  One of the columns seems to be perfectly
 fine, though, and that is the `pickup_datetime` column.  Its range is
-exactly as expected.  A bit strange.
+exactly as expected.  A bit strange.  On the other hand, for some
+rides, the pickup time is _after_ the dropoff time.
 
-A deeper analysis is needed to understand this, of course depending on
-the application.  As we've seen there are also correlations between
-"vendors" and specific data problems, so not all problems we see are
-general.
+Note also that not all problems are general, as we saw in our
+per-vendor heatmap analysis.  Each vendor may have its own data issues.
 
 
 
 # Execution Times
 
+The script generating plots and movie on
+[github](https://github.com/exaxorg/NYC-cab-analysis-and-movie)
+executes in **38 seconds** on the old [Lenovo
+workstation](https://expertmakeraccelerator.org/performance/2019/09/02/bigdata_on_inexpensive_workstation.html),
+and in **95 seconds** on a 2018 laptop.
+
+
 
 # Conclusion
+
