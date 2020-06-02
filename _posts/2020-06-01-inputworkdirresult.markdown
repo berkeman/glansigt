@@ -6,7 +6,23 @@ categories: example
 ---
 
 
-Intro...
+One key feature with the Accelerator from eBay is its *build system*
+and the way it handles intermediate storage of data and parameters.
+The goal of the system is to provide **transparency** and
+**reproducilility** by design, to any project.  While being main
+features on their own, this also reduces the risk of making errors,
+while typically speeding up execution times, both in the development and deployment phases.
+
+Processing is "from left to right", starting with input data end
+ending with output results.  Inbetween, any intermediate or temporary
+storage is written (and read back) to a dedicated space called the
+*workdir*, see figure below.
+
+<p align="center"><img src="{{ site.url }}/assets/input_results_splash.svg"> </p>
+
+This post will discuss what problems the Accelertor's build system
+targets, and how it solves them.
+
 
 
 # Result = Input + Program + Execution time
