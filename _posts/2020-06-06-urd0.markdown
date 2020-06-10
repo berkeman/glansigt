@@ -1,0 +1,207 @@
+---
+layout: post
+title:  "Urd Example - Part 1:  Plain Import of a List of Files"
+date:   2020-06-01 00:00:00
+categories: example
+---
+
+Urd is the Norse godess of the past.  It is also the name of the
+Accelerator's database that keeps track of built jobs and their
+dependencies.
+
+This short example shows how to import a sequence of files into a
+chained dataset.  The dataset can then be subject to further
+processing.
+
+This is the first part of a series of three posts intended to show how
+to design build scripts for automated importing of files.  The other
+posts are @@@ and @@@.  In this part, the build script is very basic
+and it does not make use of any of Urd's advanced features.  Using Urd
+for keeping track of things is the topic of the other posts in this series.
+
+
+
+## Background
+
+It is common that a project is based on a set of input files.
+Sometimes these files could be arranged in order, for example by date,
+sometimes they do not have such a relation.  Sometimes the number of
+files is fixed, sometimes more files will be added to the project
+later.  The Accelerator is built to handle all these different cases
+while providing transparency and reproducibility.
+
+This post looks at the basic case how to import a sequence of files in
+a given order, and create a dataset _chain_ which makes the data from
+all files available using the same simple interface.
+
+
+
+## A Build Script for Importing Files
+
+Assume that all files in a list like the one below is to be imported.
+
+```
+files = (
+        'yellow_tripdata_2009-01.csv 2009-01',
+        'yellow_tripdata_2009-02.csv 2009-02',
+        'yellow_tripdata_2009-03.csv 2009-03',
+)
+```
+
+(These are, in fact, the first three files in the NYC City Taxi
+dataset.  To import all of them, please see **@@@this blog post**.)
+
+
+It is straightforward to import these files in a loop, like this
+
+```python
+def main(urd):
+        previous = None
+        for filename in files:
+                importjob = urd.build('csvimport', filename=filename, previous=previous)
+                previous = importjob
+
+        # Now, "importjob" is a job object that can access the whole chain of Datasets.
+```
+
+The `csvimport` method will be called for all of the files in the
+`files` list, one by one.  The method will read the files and create
+datasets from the files' contents.
+
+The value returned by the `urd.build()`-call is a job object
+corresponding to the built `csvimport` job.  The `csvimport` method
+will create a "default" dataset, making it possible to treat the job
+object as a reference to both the job _and_ the created dataset inside
+the job.
+
+To create a _chain_ of datasets, we insert the job object of the
+previous import job into the next, using the `previous`-parameter.
+This basically creates a linked list of jobs (and default datasets).
+
+If new files are added at a later time, these will be imported and
+chained as well.
+
+
+
+## Running the Build Script.
+
+The name of the script has to be `build.py` or `build_<something>.py`,
+where `<something>` is a string that is used to separate different
+build scripts residing in the same method directory.
+
+If the name of the build script is, for example,
+`build_importchain.py`, it is  run like this
+
+```bash
+% ax run importchain
+```
+
+Add option `--fullpath` to print the full path names of all job directories.
+
+Below is a typical build script output
+
+```
+dev.build_importchain
+        -  csvimport                                     MAKE  /zbd/workdirs/dev/dev-0
+	              10.6 seconds
+        -  csvimport                                     MAKE  /zbd/workdirs/dev/dev-1
+	              10.0 seconds
+        -  csvimport                                     MAKE  /zbd/workdirs/dev/dev-2
+	              10.9 seconds
+```
+
+
+## Inspection
+
+There are two commands available for looking at various aspects of
+datasets: `dsinfo` and `dsgrep`.
+
+
+
+### Dataset Information
+
+`dsinfo` is used to get information about a dataset or dataset chain.
+
+To investigate the contents of `dev-2`, do like this
+
+```
+% ax dsinfo dev-2 -c
+```
+
+which will return something similar to
+
+```
+dev-2/default
+    Method: csvimport
+    Filename: /zbd/data/nyctaxi2019/yellow_tripdata_2009-03.csv
+    Previous: dev-1
+    Columns:
+        dropoff_datetime    bytes
+        dropoff_latitude    bytes
+        dropoff_longitude   bytes
+        fare_amount         bytes
+        mta_tax             bytes
+        passenger_count     bytes
+        payment_type        bytes
+        pickup_datetime     bytes
+        pickup_latitude     bytes
+        pickup_longitude    bytes
+        rate_code           bytes
+        store_and_fwd_flag  bytes
+        surcharge           bytes
+        tip_amount          bytes
+        tolls_amount        bytes
+        total_amount        bytes
+        trip_distance       bytes
+        vendor_id           bytes
+    18 columns
+    14,387,371 lines
+    Chain length 3, from dev-0 to dev-2
+          0: dev-0/default (14,092,413)
+	  1: dev-1/default (13,380,122)
+	  2: dev-2/default (14,387,371)
+    41,859,906 total lines in chain
+```
+
+Here, it shows that the full name of the dataset is `dev-2/default`,
+and that it is chained (linked) to `dev-1` using the `previous`
+attribute.  The bottom lines show that there are three dataset in the
+chain, together with the number of lines in each dataset.  (Observe
+that all columns are untyped, i.e. are of type `bytes`.  Ideally, the
+dataset should be typed using the `dataset_type` method.)
+
+Try `ax dsinfo --help` option for more options.
+
+
+
+### List and Find Data in a Dataset
+
+The `dsgrep` command is similar to `grep`, and it can be used to find
+and show data in a dataset.
+
+```bash
+% ax dsgrep <regexp> <dataset> <columns>
+```
+
+The `<columns>` option is optional, and `<regexp>` is a traditional
+`grep` regular expression.
+
+A special case is using `dsgrep` to print _all_ data in a dataset.
+This is done using the all-matching regular expression "`.`".
+
+```bash
+% ax dsgrep . dev-2 | head
+```
+
+(The pipe to `head` is used to limit the number of output lines to
+ten.)
+
+Printing a particular set of columns is done like this
+
+```
+% ax dsgrep . dev-2 tip_amount | head
+```
+
+that will print ten lines from the `tip_amount` column.
+
+Again, use the `--help` option to get a list of all options.

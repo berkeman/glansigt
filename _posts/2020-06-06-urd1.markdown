@@ -1,0 +1,300 @@
+---
+layout: post
+title:  "Urd Example - Part 2:  Let Urd keep track of your Datasets"
+date:   2020-06-01 00:00:00
+categories: example
+---
+
+Urd is the Norse godess of the past.  It is also the name of the
+Accelerator's database that keeps track of built jobs and their
+dependencies.
+
+In this post, we show how to import a list of files and create a
+_dataset chain_, and how to store and retrieve the constructed
+dataset chain using Urd.
+
+The presented solution will automatically handle the case when new
+files are added to a project.  Re-running the build script will import
+and chain all files that are new since the last run.  References in
+Urd will be updated as well, and previous references will still be
+available for reproducibility.  Data is never lost or overwritten
+using the Accelerator.
+
+This is the second part of a series of three posts.  The other posts
+are @@@ and @@@.
+
+
+
+## Background
+
+Urd keeps track of jobs and their dependencies on other jobs.  Two key
+Urd concepts are the _session_ and the _list_.
+
+ - An Urd session is a set of Accelerator jobs that are tied together
+by a timestamp.  A session could also contain references to other
+sessions.
+
+ - An Urd list is a list of sessions, stored in increasing timestamp
+   order.
+
+For example, when importing a list of files, each import is stored in
+a session with an unique timestamp, and all sessions are located in
+one list, for example named `import`.
+
+It should be noted that Urd timetamps can be either an integer, a
+timestamp down to micro second resolution, or a tuple containing both.
+This makes indexing of sessions very flexible.
+
+
+
+## A Build Script for Importing Files and Storing References in Urd
+
+We want to import these files in date order and create a dataset chain.
+
+```
+files = (
+        ('2009-01', 'yellow_tripdata_2009-01.csv 2009-01'),
+        ('2009-02', 'yellow_tripdata_2009-02.csv 2009-02'),
+        ('2009-03', 'yellow_tripdata_2009-03.csv 2009-03'),
+)
+```
+
+The difference from the last @@@post is that here, each file has a
+_timestamp_.  The timestamp is used as a key in Urd, so the state of
+an imported dataset chain, _and all jobs processing it_, can be
+retrieved the way they looked at any instance in time.
+
+Here is a complete build script that will import and chain the files
+in order, as well as storing references to all jobs together with
+their timestamp in Urd.
+
+```python
+1: def main(urd):
+2:         key = 'import'
+3:         last_import = urd.peek_latest(key).timestamp
+4:         for ts, filename in files:
+5:                 if ts > last_import:
+6:                         urd.begin(key, ts)
+7:                         previous = urd.latest(key).joblist.get(-1)
+8:                         urd.build('csvimport', filename=filename, previous=previous)
+9:                         urd.finish(key)
+```
+
+Detailed explanation:
+
+- We start with line 8.  This is the line that does the actual
+  importing of the file.  The method needs to know the name of the
+  file to import, and also, since we want the datasets to be chained,
+  we provide a `previous` that points to the previous import.
+
+- Then, lines 6 and 9 defines an urd session for this import.  The
+  session is associated with a key and a timestamp.  The key binds the
+  import of all the files together to an urd _list_, and the timestamp
+  is used to identify individual import jobs.
+
+- Line 7 finds the reference to the previous import job.  This is done
+  by asking urd for the latest job that is associated with the given
+  key.  If there is no such job, `previous` will be set to `None`.
+  (See below for explanation of the `get(-1)`.  
+  Note that `urd.latest` instructs urd "under the hood" to attach this
+  dependency to the urd session.  Therefore, it can only be issued inside
+  a running urd session.
+
+
+This concludes the actual urd session and importing, in addition
+
+- line 3, early in the script, we ask urd for the latest import so
+  far.  This will be our starting point.  (We cannot use `urd.latest`
+  since we are not recording an urd session.  Instead we use
+  `urd.peek_latest`, which is the same thing, but without dependency
+  recording.)
+
+- lines 4 and 5 loop over all files and timestamps, and issues an urd
+  session with import _only for those files that it has not imported
+  on a previous run_.
+
+The `urd.joblist.get(-1)` might seem cryptic.  Actually the `joblist`
+is a kind of a list, that has an additional class method `get()` that
+works kind of like `dict.get()`.  The argument could be either a
+method name, or an index.  Index `-1` corresponds to the last index in
+the list.  If this does not exist (i.e. the `joblist` is empty),
+`get` will return `None`.
+
+Why `-1` then?  It is because it is common that sessions contain
+several jobs, doing various massage to the imported data, and the
+dataset in the last job is typically what we want to continue working
+on.
+
+## Running the build script
+
+As usual, a build script named `build_<name>` is run using `ax run <name>`,
+so if the script is named `build_import.py`, we do
+
+```
+% ax run import
+```
+
+
+### Inspecting the Urd Database
+
+Now, let us investigate what has been stored in the Urd database.
+
+First, let us list all the Urd lists.
+
+```
+% ax curl list
+[
+    "<user>/import",
+]
+	
+```
+
+There is only one urd list, named `import`, recorded.  Let us list all
+its timestamps:
+
+```
+% ax curl <user>/import/since/0
+[
+    "2009-01",
+    "2009-02",
+    "2009-03"
+]
+```
+
+(We asked for all timestamps are larger than '0'.  All valid
+timestamps sort after zero.  Replace '0' by an actual timestamp to see
+only more recent entries.)
+
+We can look at a single entry like this
+
+```
+% ax curl <user>/create/2009-01
+{
+    "timestamp": "2020-01",
+    "user": "<user>",
+    "build": "import",
+    "joblist": [
+        [
+	    "csvimport",
+	    "dev-0"
+	]
+    ],
+    "deps": {},
+    "caption": ""
+}
+```								    
+
+What is returned here in pretty printed json is basically the urd
+session object that is returned by `urd.latest()` and its siblings.
+
+(If we want to see the latest entry there is a shortcut `ax curl <list>/latest`)
+
+
+
+### How to Fetch the Imported Dataset Chain from Another Build Script
+
+Now that the import jobs are stored in an Urd list, we can retrieve
+them in another build script and do some data processing
+
+```python
+def main(urd):
+    impjob = urd.peek_latest('import').joblist[-1]
+    # "imp" is now a jobid to the latest import job, use it for example like this
+    urd.build('process', source=imp)
+```
+
+Here we access the last item in the `joblist` directly, since we want
+execution to fail immediately if there is no job to be found.
+(Remember the urd session object shown in the json file earlier.  What
+we get from `peek_latest` is an urd session object, that has an
+attribute "joblist", which contains jobids to all jobs in the session.
+We fetch the last (and only) job from the session.)
+
+Note again that we use `peek_latest` which is the non-recording
+version of `latest` that should be used outside Urd sessions.
+
+
+
+### Fetch Imported Dataset and Create a new Processing Session
+
+This is a common pattern.  We fetch a particular version
+(timestamp) of the jobs in the Urd list, and process the data stored
+there.  The processing we do is also stored in Urd in _another_ list,
+but with the _same_ timestamp:
+
+```python
+def main(urd):
+    key = 'process'
+    urd.begin(key)
+    urditem = urd.latest('import')
+    ts = urditem.timestamp
+    impjob = urditem.joblist[-1]
+    urd.build('process', source=impjob)
+    urd.finish(key, ts)
+```
+
+Note here how the timestamp for the import session is extracted and
+inserted into this `process` session.  Furthermore, the dependency
+from the `import` session will be stored in the `process` session since
+we fetched information from it using `urd.latest()`.
+
+To see this, we run the build script above and then we take a look at
+Urd.
+
+```
+% ax curl list
+[
+    "<user>/import",
+    "<user>/process",
+]
+```
+
+A new Urd-list `process` has been created.  What are the stored timestamps?
+
+```
+% ax curl <user>/process/since/0
+[
+    "2009-03"
+]
+```
+
+Same timestamp as the last import job, from where we fetched the
+dataset chain.  The Urd session:
+
+```
+% ax curl <user>/process/2009-03
+{
+    "timestamp": "2009-03",
+    "build": "process",
+    "user": "<user>",
+    "joblist": [
+        [
+            "process",
+            "dev-3"
+        ]
+    ],
+    "caption": ""
+    "deps": {
+        "<user>/import": {
+            "caption": "",
+            "joblist": [
+                [
+                    "csvimport",
+                    "dev-2"
+                ]
+            ],
+            "timestamp": "2009-03"
+        }
+    },
+}
+```
+
+Here we can see the jobid to the `process` job, which is `dev-3`, as
+well as its dependencies.  In this case, the dependency is the
+`import` Urd list at timestamp `2009-03`, holding the `csvimport` job
+`dev-2`.
+
+Using the Accelerator, everything compute step is traceable all the
+way back to its source code and input data!
+
+
