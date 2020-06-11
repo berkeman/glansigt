@@ -8,18 +8,18 @@ categories: example
 
 One key feature of the Accelerator from eBay is its *build system* and
 the way it stores and keeps track of all programs executed and their
-generated output.  The goal of the system is to provide
-**transparency** and **reproducilility** by design, to any project.
-While these are main features on their own, the design also reduces
-the risk of making errors, while typically speeding up execution
-times, both in the development and deployment phases.
+corresponding output.  A design goal of the Accelerator is to provide
+**transparency** and **reproducibility**, to any project.  While these
+are main features on their own, the design also reduces the risk of
+making manual errors, while typically speeding up execution times,
+both in the development and deployment phases.
 
 The improvement in speed is because the Accelerator makes sure that
 the _same program can not be executed twice on the same data_.  If a
 result has been computed before, it will be re-used instead of
 re-computed.  (Another, unrelated, reason for the Accelerator to being
 fast is that it provides a parallel streaming data interface that it is
-embarrasingly simple to write parallel programs around, in plain
+embarrassingly simple to write parallel programs around, in plain
 Python.)
 
 The figure below is a high level illustration of what the
@@ -28,9 +28,9 @@ Accelerator's processing flow looks like
 <p align="center"><img src="{{ site.url }}/assets/input_results_splash.svg"> </p>
 
 Data processing is "from left to right", starting with input data end
-ending with output results.  Inbetween, any intermediate or temporary
+ending with output results.  In between, any intermediate or temporary
 storage is written (and read back) to a dedicated space called the
-*work directory*, see figure below.
+*work directory*.
 
 This post explains how the Accelerator's build system works, what kind
 of problem it targets, and how it solves them.
@@ -39,9 +39,8 @@ of problem it targets, and how it solves them.
 
 # Result = Input + Program + Execution time
 
-Let us start with the basics to make sure we are on the same page.
-Typically, a data science task is about creating some output from a
-data set, like this
+Let us start with the basics.  Typically, a data science task is about
+creating some output from a data set, like this
 
 <p align="center"><img src="{{ site.url }}/assets/input_output.svg"> </p>
 
@@ -62,12 +61,13 @@ result may depend on these as well.
 
 We also note that it takes some _execution time_ to generate the
 result from the input data using the program.  If the program runs
-fast and the dataset is small, this is perhaps not a big issue.  We
-can keep track of the complete process from input to output using a
-single _Makefile_ for example.  When the source code is updated we can
-update the result correspondingly by running _make_.  But if the
-program runs for a longer time, development cycles will be longer and
-results will be more valuable since it takes time to generate them.
+fast and the dataset is small, this is perhaps not a big issue.  A
+classic solution to keep track of the process from input to output is
+to use a _Makefile_.  When the source code is updated we can update
+the result correspondingly by running _make_.  But if the program runs
+for a longer time, development cycles will be longer and results will
+be more valuable since it takes time to generate (and perhaps
+re-generate) them.
 
 
 
@@ -82,18 +82,18 @@ where input to one part is the output of another, like this.
 <p align="center"><img src="{{ site.url }}/assets/input_prog_output2.svg"> </p>
 
 The main benefit here is that once we've developed and debugged
-program1, we can store its output on disk and concentrate on the
-development of program2 _without_ running program1 again.  Assuming
+`program1`, we can store its output on disk and concentrate on the
+development of `program2` _without_ running `program1` again.  Assuming
 that writing and reading the intermediate storage is fast, this may
 save a considerable amount of execution time.
 
-Another benefit might be that the output data from program1 may be
-used for several applications, so we can fork different subprojects
-from the output of program1 instead of starting over at the input data
-file.  If program1 does some data preprocessing or cleanup, for
-example, this makes total sense.  In fact, we probaly want to _ensure_
-that the same preprocessing is applied to all our subprojects.  "Don't
-Repeat Yourself".
+Another benefit might be that the output data from `program1` may be
+used for several applications, so we can fork different sub projects
+from the output of `program1` instead of starting over with the input
+data file again.  If `program1` does some data preprocessing or
+cleanup, for example, this makes total sense.  In fact, we probably
+want to _ensure_ that the same preprocessing is applied to all our
+sub projects.  "Don't Repeat Yourself".
 
 
 
@@ -109,12 +109,12 @@ have something like in the figure below (or even more complex)
 
 Here, we've made two changes.
 
- - First, program1 was modified.  This modification caused the output
+ - First, `program1` was modified.  This modification caused the output
 to change as well.  The updated output had to be stored on disk so
-that program2 could use the updated instead of the old version.
-Running program2 on the updated result caused the output result to change.
+that `program2` could use the updated instead of the old version.
+Running `program2` on the updated result caused the output result to change.
 
-- Second, program2 was modified.  This caused the result to change again.
+- Second, `program2` was modified.  This caused the result to change again.
 
 In total, we now have three different results.  There are several
 potential problems here, for example (tick the ones you recognize):
@@ -134,8 +134,9 @@ potential problems here, for example (tick the ones you recognize):
 
 - What if we decide that the first version is the one we want to keep?
   If we've overwritten our intermediate data, we have to re-run the
-  first version *again*.  Time consuming.  Could we have kept all
-  outputs and results?  -Yes we could - disk space is very cheap these days.
+  first version *again*.  Time and energy consuming.  Could we have
+  kept all outputs and results?  -Yes we could - disk space is very
+  cheap these days.
 
 It seems we have to _remember_ or _manually keep track of_ which
 result that belongs to which version of the code.  **This does not
@@ -150,20 +151,67 @@ definitely *easy to make mistakes*.
 
 # The Accelerator Approach
 
-The approach taken by the Accelerator is simple but very efficient.
-Running a program using the Accelerator is considered to be an atomic
-operation.  In Accelerator lingo this is called to run a _job_.
-Everything related to a program run is kept together in one place for
-reference and transparency.  This means that any intermediate files in
-a project are tied to the job that created them.
+The approach taken by the Accelerator is simple and efficient.
+
+The Accelerator has the concept of _jobs_.  Everything related to a
+single program run, all inputs and outputs as well as the program
+itself, is collected and stored in one place for reference and
+transparency.  This means that any intermediate files in a project are
+tied to the job that created them.
+
+Jobs can only be created, not modified or erased, by the Accelerator.
+And they can only execute once.  When the program completes execution,
+the Accelerator returns a Python object that links to all data related
+to the job.  The returned Python object can be input to new jobs,
+creating _dependencies_, so that they can make use of the job's data.
+
+Some files (such as diagrams, toplists, movies, et cetera) in some
+jobs are more important and considered to be project _results_.  These
+files can be made accessible from the `result directory`.  Here is a
+simple code snippet for demonstration
+
+```python
+def main(urd):
+    job = urd.build('myprogram')
+    job.link_result('theoutput.txt')
+```
+
+This so called _build scrip_ executes `myprogram`, and links the
+generated output file `theoutput.txt` to the result directory.
+
+The figure below is a high level view of the Accelerators data flow
+
+<p align="center"><img src="{{ site.url }}/assets/input_results.svg"> </p>
+
+The _input directory_ keeps all input data files.  All jobs are stored
+in the _work directory_ as plain files - a filesystem is a database
+too!  And finally, major results are linked to the _result directory_.
+
+
+
+## Transparency
+
+By looking at a file in the _result directory_, one can directly see
+which file inside a job directory that it points to.  Inside this job
+directory is the source code that generated the file, along with
+references to input data and other jobs that were used to process the
+data.  Following all links backwards will unwind the complete
+processing graph, independent of how complex it is, all the way back
+to the input data.  For each job, the source code and parameters can
+be extracted too.  Using the Accelerator approach, there is _always_ a
+100% transparency from input to output.
+
+
+
+## So What Exactly is Stored in the Job Directory?
 
 In practice, when a new program is run, the Accelerator creates a
-directory (called a _job directory) which is populated with files
+directory (called a _job directory_), which is populated with files
 covering all information that relates to the program run.  The first
 things that are written in the directory are files contain meta
 information about the job.  Thereafter, any files written by the
-running program as well as the program's return data and other output
-is stored in the directory.  In brief, the job directory contains
+running program as well as the program's return value and print
+strings is stored in the directory.  Thus, the job directory contains
 among other things
 
  - the program's source code,
@@ -176,44 +224,16 @@ among other things
 
 In fact, a job directory contains everything needed to run a specific
 program with a particular set of input parameters and data references.
-It also contains anything output during the program's execution,
-including temp files, print-outputs, stderr-messages and return value.
+And also everything output during the program's execution, including
+temp files, print-outputs, stderr-messages and return value.
 
-When the program completes execution, the Accelerator returns a link
-(or a path) to the job directory back to the caller.
-
---- Jobs can only be build once, fetch and re-use old jobs, never execute the same thing twice ---
-
-
-The figure below is a high level view of the Accelerators data flow
-
-<p align="center"><img src="{{ site.url }}/assets/input_results.svg"> </p>
-
-Data is read from the `input directory`, which is set in a
-configuration file.  All jobs are stored in the `work directory`.  The
-work directory is in fact a database of all executed jobs, implemented
-using plain directories and files for transparency and efficiency.
-
-Since everything produced by a program will be stored inside a job
-directory, all resulting files and data, such as for example diagrams,
-will be located inside job directories.  To make it straightforward to
-find these, they can be soft linked to the `result directory`.
-
-Thus, data is read from files in the `input directory`, intermediate
-files are stored in the `work directory`, and results are placed in
-the `result directory`.  Plain and simple.
-
-
-
-## Transparency
-
-By looking at a resulting file, one can directly see the link to the
-file inside a job directory.  inside this job is the source code that
-generated the file, along with references to input data and other jobs
-that were used to process the data.  Following all links backwards
-will unwind the complete processing graph, independent of how complex
-it is, all the way back to the input data.  For each job, the source
-code and parameters can be extracted too.
+Note that _jobs can only be built once_.  For every build, the
+Accelerator checks if there is a corresponding job already built.  It
+can do this very fast, since each job stores a hash digest of the
+job's source code.  The hash digest together with input parameters is
+a unique identifier of a job.  The Accelerator will immediately return
+a job object if the job to the built already exists.  So **re-use,
+don't re-compute**.  Never execute the same thing twice!
 
 
 
